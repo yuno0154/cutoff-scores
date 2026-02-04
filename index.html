@@ -1,0 +1,1992 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나이스 추정분할점수 산출 실습</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f1f5f9;
+            --border: #cbd5e1;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --dark: #1e293b;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            background: #334155;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 15px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+
+        .tab:hover {
+            color: #fbbf24;
+            background: #475569;
+        }
+
+        .tab.active {
+            color: #1e293b;
+            background: #fbbf24;
+            font-weight: bold;
+            border-bottom: 3px solid #60a5fa;
+        }
+
+        .content {
+            padding: 25px;
+            display: none;
+            min-height: 500px;
+        }
+
+        .content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .section-box {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 1.05rem;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary);
+            padding-left: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+
+        input,
+        select {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            border: none;
+            color: white;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-dark {
+            background: var(--dark);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .grid-5 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+        }
+
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            color: #0369a1;
+            font-size: 0.9rem;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            color: #92400e;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #bfdbfe;
+            text-align: center;
+        }
+
+        .score-val {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .ratio-ok {
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
+        .ratio-warn {
+            background: #fef9c3;
+            color: #854d0e;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
+        .ratio-error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
+        .sub-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sub-tab {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .sub-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .sub-tab.completed {
+            background: #dcfce7;
+            color: #166534;
+            border-color: #86efac;
+        }
+
+        .invalid-input {
+            background: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            color: #dc2626 !important;
+        }
+
+        .warning-diff {
+            background: #fef3c7 !important;
+            border-color: #f59e0b !important;
+        }
+
+        .diff-alert {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .radio-label input {
+            margin-right: 10px;
+        }
+
+        .teacher-control {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .round-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .round-tab {
+            padding: 8px 16px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+            color: #64748b;
+        }
+
+        .round-tab.active {
+            background: white;
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .round-tab.add-btn {
+            background: #ecfdf5;
+            color: #059669;
+            border-color: #a7f3d0;
+        }
+
+        .badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>📊 나이스 추정분할점수 산출 실습 (ver 1.0)</h1>
+                <div style="font-size:0.85rem;opacity:0.8;margin-top:5px;">만든이 : 사곡고 수석교사 최연호</div>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-success" onclick="saveFullProject()">💾 전체 저장</button>
+                <button class="btn btn-dark" onclick="document.getElementById('fullLoad').click()">📂 불러오기</button>
+                <input type="file" id="fullLoad" style="display:none" accept=".json" onchange="loadFullProject(event)">
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(0)">1. 평가구조</button>
+            <button class="tab" onclick="switchTab(1)">2. 정기시험 추정분할점수 산출</button>
+            <button class="tab" onclick="switchTab(2)">3. 수행평가 추정분할점수 산출</button>
+            <button class="tab" onclick="switchTab(3)">4. 학기말 추정분할점수 산출</button>
+        </div>
+
+        <!-- 탭 0: 평가구조 설정 -->
+        <div id="tab-0" class="content active">
+            <div class="section-box">
+                <div class="section-title">📝 기본 정보</div>
+                <div class="grid-3">
+                    <div><label>학년도</label><select id="year" style="width:100%" onchange="project.info.year=this.value">
+                            <option>2026</option>
+                            <option>2025</option>
+                        </select></div>
+                    <div><label>학기</label><select id="semester" style="width:100%"
+                            onchange="project.info.semester=this.value">
+                            <option>1학기</option>
+                            <option>2학기</option>
+                        </select></div>
+                    <div><label>과목명</label><input type="text" id="subject" style="width:100%" placeholder="예: 물리학Ⅰ"
+                            oninput="project.info.subject=this.value">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-box">
+                <div class="section-title">👥 교사 등록 <span class="badge" id="teacherCount">0명</span></div>
+                <div class="teacher-control">
+                    <input type="text" id="newTeacherName" placeholder="교사명 입력"
+                        onkeypress="if(event.key==='Enter')addTeacher()">
+                    <button class="btn btn-primary btn-sm" onclick="addTeacher()">+ 추가</button>
+                </div>
+                <div id="teacherList" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+            </div>
+
+            <div class="section-box">
+                <div class="section-title">📋 정기시험 구성 <span>합계: <span id="paperRatioTotal"
+                            class="ratio-warn">0%</span></span>
+                    <button class="btn btn-primary btn-sm" onclick="addPaper()">+ 추가</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>구분</th>
+                            <th>배점</th>
+                            <th>반영비율(%)</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paperTbody"></tbody>
+                </table>
+            </div>
+
+            <div class="section-box">
+                <div class="section-title">📋 수행평가 구성 <span>합계: <span id="perfRatioTotal"
+                            class="ratio-warn">0%</span></span>
+                    <button class="btn btn-primary btn-sm" onclick="addPerf()">+ 추가</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>영역명</th>
+                            <th>배점</th>
+                            <th>반영비율(%)</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="perfTbody"></tbody>
+                </table>
+            </div>
+            <div class="info-box">💡 반영비율 합계: <strong id="totalRatio">0%</strong> (100%가 되어야 합니다)</div>
+        </div>
+
+        <!-- 탭 1: 정기시험 -->
+        <div id="tab-1" class="content">
+            <div class="info-box">📌 각 정기시험별로 문항정보표를 업로드하고, 교사별 예상정답률을 입력합니다.</div>
+            <div class="sub-tabs" id="paperSubTabs"></div>
+            <div id="paperContent"></div>
+        </div>
+
+        <!-- 탭 2: 수행평가 -->
+        <div id="tab-2" class="content">
+            <div class="info-box">📌 수행평가 전체 영역과 영역별 중 선택 후 A~E 성취수준별 분할점수를 입력합니다.</div>
+            <div class="section-box">
+                <div class="section-title">📝 수행평가 등급별 점수 입력</div>
+                <table>
+                    <thead id="perfCutsThead">
+                        <tr>
+                            <th>영역명</th>
+                            <th>만점</th>
+                            <th>A</th>
+                            <th>B</th>
+                            <th>C</th>
+                            <th>D</th>
+                            <th>E</th>
+                        </tr>
+                    </thead>
+                    <tbody id="perfCutsTbody"></tbody>
+                </table>
+            </div>
+            <div class="section-box">
+                <div class="section-title">📊 수행평가 반영비율 적용 결과</div>
+                <div class="grid-5" id="perfResultGrid"></div>
+            </div>
+        </div>
+
+        <!-- 탭 3: 최종결과 -->
+        <div id="tab-3" class="content">
+            <div class="section-box">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="section-title">📊 상세 산출 내역</div>
+                </div>
+                <!-- 상세 산출 내역 테이블은 calculateFinal() 호출 시 렌더링됨 -->
+                <div id="detailBreakdown"></div>
+            </div>
+
+            <div
+                style="position:relative; text-align:center; margin: 20px 0; display:flex; justify-content:center; align-items:center;">
+                <button class="btn btn-primary" style="padding:15px 40px;font-size:1.1rem;"
+                    onclick="calculateFinal()">📊 추정분할점수 산출</button>
+                <div style="position:absolute; right:0;">
+                    <button class="btn btn-warning" onclick="alert('나이스에서 결재를 상신합니다.')">승인 요청</button>
+                    <button class="btn btn-danger" onclick="alert('마감합니다.')">마감</button>
+                </div>
+            </div>
+
+            <!-- 추정분할점수 산출 결과는 버튼 누르기 전에도 보일 수 있으나, 문맥상 '상세 산출 내역'은 항상 보이고 결과는 버튼 눌러 갱신/확인하는 구조가 자연스러움. -->
+            <!-- 하지만 요청사항은 "상세 산출 내역은 버튼을 누르지 않아도 표시"임. -->
+            <!-- 따라서 초기 로딩 시 혹은 탭 진입 시 calculateFinal이 호출되어 이미 그려져 있을 것임. -->
+            <!-- 버튼은 '재산출' 또는 '확인' 차원에서 존재하거나, 하단 결과영역 갱신용일 수 있음. -->
+            <div class="section-box">
+                <div class="section-title">🏆 추정분할점수 산출 결과</div>
+                <div class="grid-5" id="finalResultGrid"></div>
+            </div>
+
+            <!-- 결과 저장 버튼 삭제됨 -->
+        </div>
+    </div>
+
+    <!-- 승인요청 모달 -->
+    <div id="approvalModal" class="modal">
+        <div class="modal-content">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h2 style="margin:0;">📝 승인 요청</h2>
+                <button onclick="closeModal('approvalModal')"
+                    style="background:none;border:none;font-size:1.5rem;cursor:pointer;">✕</button>
+            </div>
+            <div style="margin-bottom:15px;"><label>라운드 선택:</label><select id="approvalRoundSelect"
+                    style="width:100%;margin-top:5px;"></select></div>
+            <div class="warning-box">⚠️ 나이스에서 선택 후 상신함</div>
+            <div style="text-align:right;"><button class="btn btn-dark"
+                    onclick="closeModal('approvalModal')">닫기</button></div>
+        </div>
+    </div>
+
+    <!-- 마감취소 모달 -->
+    <div id="cancelModal" class="modal">
+        <div class="modal-content">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h2 style="margin:0;">🔓 입력마감 취소</h2>
+                <button onclick="closeModal('cancelModal')"
+                    style="background:none;border:none;font-size:1.5rem;cursor:pointer;">✕</button>
+            </div>
+            <div class="warning-box">⚠️ 마감을 취소하면 해당 라운드를 다시 수정할 수 있습니다.</div>
+            <div class="radio-group" style="margin-bottom:15px;">
+                <label class="radio-label"><input type="radio" name="cancelReason" value="문항 오류로 인한 만점 변동">문항 오류로 인한 만점
+                    변동</label>
+                <label class="radio-label"><input type="radio" name="cancelReason" value="전면 재시험">전면 재시험</label>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button class="btn btn-dark" onclick="closeModal('cancelModal')">취소</button>
+                <button class="btn btn-danger" onclick="confirmCancelFinalize()">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 추정분할점수 산출결과 모달 -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content" style="max-width:900px;max-height:90vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h2 style="margin:0;">📊 추정분할점수 산출결과</h2>
+                <button onclick="closeModal('resultModal')"
+                    style="background:none;border:none;font-size:1.5rem;cursor:pointer;">✕</button>
+            </div>
+            <div id="resultModalContent"></div>
+            <div
+                style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:15px;">
+                <button class="btn btn-primary" onclick="exportRoundResultsToExcel()">📥 엑셀 다운로드</button>
+                <button class="btn btn-success" onclick="openApprovalFromResult()">📝 승인요청</button>
+                <button class="btn btn-dark" onclick="closeModal('resultModal')">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === 전역 데이터 ===
+        let project = {
+            info: { year: '2026', semester: '1학기', subject: '' },
+            teachers: [],
+            papers: [{ name: '1회 정기시험', score: 100, ratio: 30, excelData: [], categories: [], teacherData: {}, currentRound: 0, scoreMode: 5 }],
+            perfs: [{ name: '수행평가1', score: 100, ratio: 40, cuts: [null, null, null, null, null] }],
+            perfInputMode: 'all', // 'all' or 'each'
+            perfTotalCuts: [null, null, null, null, null] // 전체영역일 때 사용할 점수
+        };
+        let currentTab = 0;
+        let currentPaperIdx = 0;
+
+        // === 탭 전환 ===
+        function switchTab(idx) {
+            currentTab = idx;
+            document.querySelectorAll('.tab').forEach((t, i) => { if (i === idx) t.classList.add('active'); else t.classList.remove('active'); });
+            document.querySelectorAll('.content').forEach((c, i) => { if (i === idx) c.style.display = 'block'; else c.style.display = 'none'; });
+            if (idx === 0) renderSetup();
+            else if (idx === 1) renderPaperTab();
+            else if (idx === 2) renderPerfTab();
+            else if (idx === 3) {
+                calculateFinal();
+            }
+        }
+
+        // === 교사 관리 ===
+        function addTeacher() {
+            const name = document.getElementById('newTeacherName').value.trim();
+            if (!name) { alert('교사명을 입력하세요.'); return; }
+            if (project.teachers.includes(name)) { alert('이미 등록된 교사입니다.'); return; }
+            project.teachers.push(name);
+            document.getElementById('newTeacherName').value = '';
+            renderTeacherList();
+            // 각 지필평가에 교사 데이터 초기화
+            project.papers.forEach(p => { if (!p.teacherData[name]) p.teacherData[name] = { rounds: [[]], completedRounds: [] }; });
+        }
+        function removeTeacher(name) {
+            if (!confirm(`'${name}' 교사를 삭제하시겠습니까?`)) return;
+            project.teachers = project.teachers.filter(t => t !== name);
+            project.papers.forEach(p => delete p.teacherData[name]);
+            renderTeacherList();
+        }
+        function renderTeacherList() {
+            document.getElementById('teacherCount').textContent = project.teachers.length + '명';
+            document.getElementById('teacherList').innerHTML = project.teachers.map(t =>
+                `<span style="background:#e0f2fe;padding:6px 12px;border-radius:20px;display:flex;align-items:center;gap:5px;">${t}<button onclick="removeTeacher('${t}')" style="background:none;border:none;cursor:pointer;color:#dc2626;">✕</button></span>`
+            ).join('');
+        }
+
+        // === 평가구조 설정 ===
+        function addPaper() { project.papers.push({ name: `${project.papers.length + 1}회 정기시험`, score: 100, ratio: 0, excelData: [], categories: [], teacherData: {}, currentRound: 0, scoreMode: 5 }); renderSetup(); }
+        function addPerf() { project.perfs.push({ name: `수행평가${project.perfs.length + 1}`, score: 100, ratio: 0, cuts: [null, null, null, null, null] }); renderSetup(); }
+        function removePaper(i) { if (project.papers.length <= 1) return alert('최소 1개 필요'); project.papers.splice(i, 1); renderSetup(); }
+        function removePerf(i) { if (project.perfs.length <= 1) return alert('최소 1개 필요'); project.perfs.splice(i, 1); renderSetup(); }
+
+        function renderSetup() {
+            renderTeacherList();
+            let pSum = 0, fSum = 0;
+            document.getElementById('paperTbody').innerHTML = project.papers.map((p, i) => {
+                pSum += p.ratio;
+                return `<tr><td><input value="${p.name}" onchange="project.papers[${i}].name=this.value" style="width:150px"></td>
+        <td><input type="number" value="${p.score}" onchange="project.papers[${i}].score=Number(this.value)" style="width:80px"></td>
+        <td><input type="number" value="${p.ratio}" onchange="project.papers[${i}].ratio=Number(this.value);renderSetup()" style="width:80px"></td>
+        <td><button class="btn btn-danger btn-sm" onclick="removePaper(${i})">삭제</button></td></tr>`;
+            }).join('');
+            document.getElementById('perfTbody').innerHTML = project.perfs.map((p, i) => {
+                fSum += p.ratio;
+                return `<tr><td><input value="${p.name}" onchange="project.perfs[${i}].name=this.value" style="width:150px"></td>
+        <td><input type="number" value="${p.score}" onchange="project.perfs[${i}].score=Number(this.value)" style="width:80px"></td>
+        <td><input type="number" value="${p.ratio}" onchange="project.perfs[${i}].ratio=Number(this.value);renderSetup()" style="width:80px"></td>
+        <td><button class="btn btn-danger btn-sm" onclick="removePerf(${i})">삭제</button></td></tr>`;
+            }).join('');
+            const total = pSum + fSum;
+            document.getElementById('paperRatioTotal').textContent = pSum + '%';
+            document.getElementById('paperRatioTotal').className = pSum > 0 ? 'ratio-ok' : 'ratio-warn';
+            document.getElementById('perfRatioTotal').textContent = fSum + '%';
+            document.getElementById('perfRatioTotal').className = fSum > 0 ? 'ratio-ok' : 'ratio-warn';
+            document.getElementById('totalRatio').textContent = total + '%';
+        }
+
+        // === 정기시험 탭 ===
+        function renderPaperTab() {
+            document.getElementById('paperSubTabs').innerHTML = project.papers.map((p, i) =>
+                `<div class="sub-tab ${i === currentPaperIdx ? 'active' : ''} ${p.excelData.length > 0 ? 'completed' : ''}" onclick="currentPaperIdx=${i};renderPaperTab()">${p.name}</div>`
+            ).join('');
+            renderPaperContent();
+        }
+
+        function renderPaperContent() {
+            const paper = project.papers[currentPaperIdx];
+            const fileName = paper.fileName || '선택된 파일 없음';
+            let html = `<div class="section-box"><div class="section-title">📁 문항정보표 업로드</div>
+        <input type="file" id="fileInput_${currentPaperIdx}" accept=".xlsx,.xls" onchange="handleExcelUpload(event,${currentPaperIdx})" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput_${currentPaperIdx}').click()">파일 선택</button>
+            <span id="fileName_${currentPaperIdx}" style="color:#64748b;">${fileName}</span>
+        </div>
+        <p style="font-size:0.85rem;color:#64748b;margin-top:5px;">* 나이스 양식의 문항정보표 엑셀 파일을 업로드하세요.</p></div>`;
+
+            if (paper.excelData.length > 0) {
+                // 문항정보표 상세 테이블
+                const selCount = paper.excelData.filter(d => d.type === '선택형').length;
+                const subCount = paper.excelData.filter(d => d.type === '서답형').length;
+                const totalScore = paper.excelData.reduce((s, d) => s + d.score, 0);
+
+                html += `<div class="section-box" style="background:#f8fafc;">
+                    <div class="section-title" style="border-color:#22c55e;">✅ 문항정보표 데이터</div>
+                    <div style="margin-bottom:10px;padding:10px;background:#f0fdf4;border-radius:6px;border:1px solid #bbf7d0;">
+                        <span style="font-size:1.1rem;font-weight:bold;color:#15803d;">총 ${paper.excelData.length}문항 로드 완료</span>
+                        <span style="font-size:0.9rem;color:#334155;margin-left:10px;">(선택형: <b>${selCount}</b> / 서답형: <b>${subCount}</b> / 총배점: <b>${totalScore.toFixed(1)}</b>점)</span>
+                    </div>
+                    <div style="font-size:0.85rem;color:#64748b;margin-bottom:5px;">전체 문항 리스트 (스크롤하여 확인):</div>
+                    <div style="max-height:250px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:4px;">
+                        <table style="font-size:0.85rem;background:white;">
+                            <thead style="position:sticky;top:0;background:#f1f5f9;z-index:1;">
+                                <tr><th style="padding:8px;border-bottom:2px solid #cbd5e1;width:50px;">번호</th>
+                                <th style="padding:8px;border-bottom:2px solid #cbd5e1;">문항유형</th>
+                                <th style="padding:8px;border-bottom:2px solid #cbd5e1;">난이도</th>
+                                <th style="padding:8px;border-bottom:2px solid #cbd5e1;">배점</th></tr>
+                            </thead>
+                            <tbody>
+                                ${paper.excelData.map((item, idx) => `
+                                    <tr style="border-bottom:1px solid #f1f5f9;background:${item.type === '서답형' ? '#fff7ed' : 'white'};">
+                                        <td style="padding:6px;text-align:center;color:#64748b;">${idx + 1}</td>
+                                        <td style="padding:6px;text-align:center;font-weight:${item.type === '서답형' ? 'bold' : 'normal'};color:${item.type === '서답형' ? '#d97706' : 'inherit'}">${item.type}</td>
+                                        <td style="padding:6px;text-align:center;">${item.difficulty}</td>
+                                        <td style="padding:6px;text-align:center;">${item.score}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+
+                html += `<div class="section-box"><div class="section-title">👥 교사 선택</div>
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:15px;">
+                <select id="currentTeacher" onchange="loadTeacherInput()" style="min-width:150px;"><option value="">교사 선택</option>${project.teachers.map(t => `<option value="${t}">${t}</option>`).join('')}</select>
+                <span id="currentTeacherLabel" style="color:var(--primary);font-weight:bold;"></span>
+            </div></div>`;
+
+                html += `<div class="section-box"><div class="section-title">📝 최소능력자 예상정답률 입력</div>
+            <div style="display:flex;gap:15px;align-items:center;margin-bottom:15px;flex-wrap:wrap;">
+                <div style="display:flex;gap:15px;align-items:center;background:#f1f5f9;padding:8px 15px;border-radius:8px;">
+                    <span style="font-weight:bold;color:#334155;">성취수준:</span>
+                    <label style="cursor:pointer;"><input type="radio" name="scoreMode" value="5" ${paper.scoreMode === 5 ? 'checked' : ''} onchange="changeScoreMode(5)"> 5수준(A-E)+미이수(I)</label>
+                    <label style="cursor:pointer;"><input type="radio" name="scoreMode" value="4" ${paper.scoreMode === 4 ? 'checked' : ''} onchange="changeScoreMode(4)"> 5수준(A-E)</label>
+                </div>
+            </div>
+            <div id="roundTabsContainer"></div>
+            <div id="inputTableContainer"></div>
+            <div id="inputButtons" style="display:none;text-align:right;margin-top:15px;">
+                <button class="btn btn-primary" onclick="exportTeacherInputToExcel()" style="float:left;">📥 입력값 엑셀 다운로드</button>
+                <button class="btn btn-dark" onclick="saveTeacherData()">💾 임시 저장</button>
+                <button class="btn btn-success" onclick="finalizeRound()">✅ 입력마감</button>
+                <button class="btn btn-danger" onclick="openCancelModal()">🔓 입력마감 취소</button>
+            </div></div>`;
+                html += `<div class="section-box"><div class="section-title">📋 조회</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:15px;">
+                <label style="font-weight:bold;">라운드 선택:</label>
+                <select id="viewRoundSelect" onchange="refreshViewByRound()" style="min-width:120px;">
+                    ${(() => {
+                        let opts = '';
+                        const maxRounds = Math.max(...project.teachers.map(t => paper.teacherData[t]?.rounds?.length || 0));
+                        for (let r = 0; r < maxRounds; r++) {
+                            opts += `<option value="${r}" ${r === paper.currentRound ? 'selected' : ''}>${r + 1}라운드</option>`;
+                        }
+                        return opts || '<option value="0">1라운드</option>';
+                    })()}
+                </select>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="showTeacherView()">교사별입력정보조회</button>
+                <button class="btn btn-primary" onclick="showCategoryView()">문항범주별조회</button>
+                <button class="btn btn-primary" onclick="showFinalView()">예상추정분할점수조회</button>
+                <button class="btn btn-success" style="font-weight:bold;" onclick="openResultModal()">📊 추정분할점수 산출결과</button>
+            </div>
+
+            <div id="viewContainer" style="margin-top:15px;"></div></div>`;
+            }
+            document.getElementById('paperContent').innerHTML = html;
+        }
+
+        // === 엑셀 파싱 ===
+        function handleExcelUpload(event, paperIdx) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const ws = workbook.Sheets[workbook.SheetNames[0]];
+                const raw = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+                let headerRow = -1, scoreIdx = -1;
+                for (let i = 0; i < Math.min(raw.length, 30); i++) {
+                    const row = raw[i];
+                    if (!row) continue;
+                    const str = row.map(c => String(c).replace(/\s/g, '')).join(' ');
+                    if (str.includes('배점') && str.includes('문항번호')) {
+                        headerRow = i;
+                        scoreIdx = row.findIndex(c => String(c).trim() === '배점');
+                        break;
+                    }
+                }
+                if (headerRow < 0) { alert('양식 인식 실패'); return; }
+
+                let hardIdx = -1, midIdx = -1, easyIdx = -1;
+                for (let r = headerRow; r <= headerRow + 1; r++) {
+                    const row = raw[r]; if (!row) continue;
+                    row.forEach((c, idx) => {
+                        const v = String(c).trim().replace(/\s/g, '');
+                        if (v === '어려움') hardIdx = idx;
+                        else if (v === '보통') midIdx = idx;
+                        else if (v === '쉬움') easyIdx = idx;
+                    });
+                }
+                if (hardIdx < 0) { alert('난이도 열 찾기 실패'); return; }
+
+                const excelData = [];
+                let currentType = '';
+                for (let i = headerRow + 2; i < raw.length; i++) {
+                    const row = raw[i]; if (!row) continue;
+                    const txt = row.map(c => String(c)).join('');
+                    if (txt.includes('선택형')) { currentType = '선택형'; continue; }
+                    if (txt.includes('서답형')) { currentType = '서답형'; continue; }
+                    const sc = row[scoreIdx];
+                    if (sc === undefined || sc === '' || isNaN(sc)) continue;
+                    let diff = '';
+                    if (String(row[hardIdx] || '').includes('O') || String(row[hardIdx] || '').includes('○')) diff = '어려움';
+                    else if (String(row[midIdx] || '').includes('O') || String(row[midIdx] || '').includes('○')) diff = '보통';
+                    else if (String(row[easyIdx] || '').includes('O') || String(row[easyIdx] || '').includes('○')) diff = '쉬움';
+                    else continue;
+                    excelData.push({ type: currentType || '선택형', difficulty: diff, score: parseFloat(sc) });
+                }
+                if (excelData.length === 0) { alert('문항 인식 실패'); return; }
+
+                project.papers[paperIdx].excelData = excelData;
+                project.papers[paperIdx].fileName = file.name;
+                processCategories(paperIdx);
+                project.teachers.forEach(t => {
+                    if (!project.papers[paperIdx].teacherData[t]) {
+                        project.papers[paperIdx].teacherData[t] = { rounds: [[]], completedRounds: [] };
+                    }
+                });
+                renderPaperTab();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processCategories(paperIdx) {
+            const paper = project.papers[paperIdx];
+            const catMap = new Map();
+            paper.excelData.forEach(item => {
+                const key = `${item.type}|${item.difficulty}`;
+                if (!catMap.has(key)) catMap.set(key, { type: item.type, difficulty: item.difficulty, count: 0, totalScore: 0 });
+                const cat = catMap.get(key);
+                cat.count++; cat.totalScore += item.score;
+            });
+            const cats = Array.from(catMap.values());
+            const order = { '쉬움': 1, '보통': 2, '어려움': 3 };
+            cats.sort((a, b) => { if (a.type !== b.type) return a.type === '선택형' ? -1 : 1; return (order[a.difficulty] || 9) - (order[b.difficulty] || 9); });
+            paper.categories = cats;
+        }
+
+        // === 교사 입력 ===
+        function loadTeacherInput() {
+            const name = document.getElementById('currentTeacher').value;
+            if (!name) { document.getElementById('roundTabsContainer').innerHTML = ''; document.getElementById('inputTableContainer').innerHTML = ''; document.getElementById('inputButtons').style.display = 'none'; return; }
+            document.getElementById('currentTeacherLabel').textContent = `- ${name} 선생님`;
+            document.getElementById('inputButtons').style.display = 'block';
+            renderRoundTabs();
+            renderInputTable();
+        }
+
+        function renderRoundTabs() {
+            const name = document.getElementById('currentTeacher').value;
+            if (!name) return;
+            const paper = project.papers[currentPaperIdx];
+            const td = paper.teacherData[name];
+            if (!td) return;
+            let html = '';
+            for (let i = 0; i < td.rounds.length; i++) {
+                const done = td.completedRounds.includes(i);
+                const isActive = i === paper.currentRound;
+                html += `<button class="round-tab ${isActive ? 'active' : ''}" onclick="switchRound(${i})">${i + 1}라운드${done ? ' ✓' : ''}</button>`;
+            }
+            html += `<button class="round-tab add-btn" onclick="addRound()">+ 추가</button>`;
+            if (td.rounds.length > 1) {
+                html += `<button class="round-tab" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;margin-left:auto;" onclick="deleteRound()">🗑️ 삭제</button>`;
+            }
+            document.getElementById('roundTabsContainer').innerHTML = `<div class="round-tabs" style="display:flex;gap:8px;flex-wrap:wrap;">${html}</div>`;
+        }
+
+        function switchRound(idx) { project.papers[currentPaperIdx].currentRound = idx; renderRoundTabs(); renderInputTable(); }
+        function addRound() {
+            const name = document.getElementById('currentTeacher').value;
+            if (!name) { alert('교사를 먼저 선택해주세요.'); return; }
+            const paper = project.papers[currentPaperIdx];
+            const td = paper.teacherData[name];
+
+            // 모든 교사에게 새 라운드 추가 (현재 교사만 추가하면 동기화 문제 발생)
+            const useCopy = confirm('이전 라운드 데이터를 복사하여 시작하시겠습니까?\n[확인]: 복사함 / [취소]: 빈 값으로 시작');
+
+            project.teachers.forEach(t => {
+                const teacherData = paper.teacherData[t];
+                if (!teacherData) return;
+
+                let newRoundData;
+                if (useCopy && teacherData.rounds.length > 0) {
+                    // 이전 라운드 데이터 복사
+                    const prevRound = teacherData.rounds[teacherData.rounds.length - 1];
+                    newRoundData = JSON.parse(JSON.stringify(prevRound));
+                } else {
+                    // 빈 값으로 시작
+                    newRoundData = paper.categories.map(() => Array(5).fill(null));
+                }
+                teacherData.rounds.push(newRoundData);
+            });
+
+            paper.currentRound = td.rounds.length - 1;
+            renderRoundTabs(); renderInputTable();
+            renderViewRoundSelect();
+        }
+
+        function deleteRound() {
+            const name = document.getElementById('currentTeacher').value;
+            if (!name) return;
+            const paper = project.papers[currentPaperIdx];
+            const td = paper.teacherData[name];
+
+            if (td.rounds.length <= 1) {
+                alert('최소 1개의 라운드가 필요합니다.');
+                return;
+            }
+
+            const roundToDelete = paper.currentRound;
+            if (!confirm(`${roundToDelete + 1}라운드를 삭제하시겠습니까?\n해당 라운드의 모든 데이터가 삭제됩니다.`)) return;
+
+            // 모든 교사의 해당 라운드 삭제
+            project.teachers.forEach(t => {
+                const teacherData = paper.teacherData[t];
+                if (!teacherData) return;
+                if (teacherData.rounds.length > roundToDelete) {
+                    teacherData.rounds.splice(roundToDelete, 1);
+                }
+                // completedRounds 업데이트
+                const compIdx = teacherData.completedRounds.indexOf(roundToDelete);
+                if (compIdx > -1) teacherData.completedRounds.splice(compIdx, 1);
+                // 인덱스 조정
+                teacherData.completedRounds = teacherData.completedRounds.map(r => r > roundToDelete ? r - 1 : r);
+            });
+
+            // 현재 라운드 조정
+            if (paper.currentRound >= td.rounds.length) {
+                paper.currentRound = Math.max(0, td.rounds.length - 1);
+            }
+
+            alert('라운드가 삭제되었습니다.');
+            renderRoundTabs(); renderInputTable();
+            renderViewRoundSelect();
+        }
+
+        function renderInputTable() {
+            const name = document.getElementById('currentTeacher').value;
+            if (!name) return;
+            const paper = project.papers[currentPaperIdx];
+            const td = paper.teacherData[name];
+            const round = paper.currentRound;
+            const isCompleted = td.completedRounds.includes(round);
+            const cats = paper.categories;
+            const mode = paper.scoreMode || 5;
+            const colCount = mode;
+
+            if (!td.rounds[round]) td.rounds[round] = [];
+            while (td.rounds[round].length < cats.length) td.rounds[round].push(Array(5).fill(null));
+
+            // 헤더 생성 (4단계 vs 5단계)
+            const headers4 = ['A/B(%)', 'B/C(%)', 'C/D(%)', 'D/E(%)'];
+            const headers5 = ['A/B(%)', 'B/C(%)', 'C/D(%)', 'D/E(%)', 'E/미도달(%)'];
+            const headers = mode === 5 ? headers5 : headers4;
+
+            let html = `<table><thead><tr><th>유형</th><th>난이도</th><th>문항수</th><th>배점합</th>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+            cats.forEach((cat, ci) => {
+                const vals = td.rounds[round][ci] || Array(5).fill(null);
+                html += `<tr><td>${cat.type}</td><td>${cat.difficulty}</td><td>${cat.count}</td><td>${cat.totalScore.toFixed(1)}</td>`;
+                for (let i = 0; i < colCount; i++) {
+                    const v = vals[i] !== null ? vals[i] : '';
+                    const dis = isCompleted ? 'disabled' : '';
+                    // 마지막 컬럼(5단계의 E/미도달)만 1% 단위 입력, 나머지는 5% 단위 select
+                    if (mode === 5 && i === 4) {
+                        html += `<td><input type="number" class="inp-rate" data-cat="${ci}" data-idx="${i}" value="${v}" min="20" max="100" step="1" style="width:60px" oninput="validateInputs()" ${dis}></td>`;
+                    } else {
+                        html += `<td><select class="inp-rate" data-cat="${ci}" data-idx="${i}" onchange="validateInputs()" ${dis}><option value="">선택</option>`;
+                        for (let o = 0; o <= 100; o += 5) html += `<option value="${o}" ${v === o ? 'selected' : ''}>${o}</option>`;
+                        html += `</select></td>`;
+                    }
+                }
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            document.getElementById('inputTableContainer').innerHTML = html;
+        }
+
+        function changeScoreMode(mode) {
+            project.papers[currentPaperIdx].scoreMode = mode;
+            renderInputTable();
+        }
+
+        function validateInputs() {
+            const inputs = document.querySelectorAll('.inp-rate');
+            let valid = true;
+            inputs.forEach(inp => { inp.classList.remove('invalid-input', 'warning-diff'); });
+
+            const paper = project.papers[currentPaperIdx];
+            const mode = paper.scoreMode || 5;
+            const cats = paper.categories;
+
+            // 1. Row check: 상위수준 >= 하위수준 + 20% 차이 경고
+            cats.forEach((cat, ci) => {
+                for (let c = 0; c < mode - 1; c++) {
+                    const left = document.querySelector(`.inp-rate[data-cat="${ci}"][data-idx="${c}"]`);
+                    const right = document.querySelector(`.inp-rate[data-cat="${ci}"][data-idx="${c + 1}"]`);
+                    if (left && right && left.value !== '' && right.value !== '') {
+                        const leftVal = parseFloat(left.value);
+                        const rightVal = parseFloat(right.value);
+                        // 상위 < 하위이면 오류
+                        if (leftVal < rightVal) {
+                            left.classList.add('invalid-input');
+                            right.classList.add('invalid-input');
+                            valid = false;
+                        }
+                        // 차이가 20% 이상이면 경고 (차하위에 표시)
+                        if (leftVal - rightVal >= 20) {
+                            right.classList.add('warning-diff');
+                        }
+                    }
+                }
+            });
+
+            // 2. Column check: 난이도별 (쉬움 >= 보통 >= 어려움) - 같은 유형 내
+            const types = ['선택형', '서답형'];
+            const diffOrder = ['쉬움', '보통', '어려움'];
+
+            for (let c = 0; c < mode; c++) {
+                types.forEach(type => {
+                    // 해당 유형의 난이도별 행 인덱스 찾기
+                    const catIndices = {};
+                    cats.forEach((cat, idx) => {
+                        if (cat.type === type) catIndices[cat.difficulty] = idx;
+                    });
+
+                    // 쉬움 >= 보통, 보통 >= 어려움 비교
+                    const comparePairs = [['쉬움', '보통'], ['보통', '어려움'], ['쉬움', '어려움']];
+                    comparePairs.forEach(([easy, hard]) => {
+                        if (catIndices[easy] !== undefined && catIndices[hard] !== undefined) {
+                            const easyInp = document.querySelector(`.inp-rate[data-cat="${catIndices[easy]}"][data-idx="${c}"]`);
+                            const hardInp = document.querySelector(`.inp-rate[data-cat="${catIndices[hard]}"][data-idx="${c}"]`);
+                            if (easyInp && hardInp && easyInp.value !== '' && hardInp.value !== '') {
+                                if (parseFloat(easyInp.value) < parseFloat(hardInp.value)) {
+                                    easyInp.classList.add('invalid-input');
+                                    hardInp.classList.add('invalid-input');
+                                    valid = false;
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+
+            return valid;
+        }
+
+        function saveTeacherData() {
+            if (!validateInputs()) { alert('입력값 오류를 확인하세요.'); return; }
+            const name = document.getElementById('currentTeacher').value;
+            const paper = project.papers[currentPaperIdx];
+            const td = paper.teacherData[name];
+            const round = paper.currentRound;
+            const inputs = document.querySelectorAll('.inp-rate');
+            let complete = true;
+            inputs.forEach(inp => {
+                const ci = parseInt(inp.dataset.cat), vi = parseInt(inp.dataset.idx);
+                const v = inp.value;
+                td.rounds[round][ci][vi] = v === '' ? null : parseFloat(v);
+                if (v === '') complete = false;
+            });
+            if (!complete) { alert('모든 항목을 입력하세요.'); return; }
+            alert('저장되었습니다.');
+        }
+
+        function finalizeRound() {
+            if (!validateInputs()) { alert('입력값 오류를 확인하세요.'); return; }
+            const name = document.getElementById('currentTeacher').value;
+            const paper = project.papers[currentPaperIdx];
+            const td = paper.teacherData[name];
+            const round = paper.currentRound;
+            if (td.completedRounds.includes(round)) { alert('이미 마감됨'); return; }
+            saveTeacherData();
+            if (!confirm(`${name} 선생님의 ${round + 1}라운드를 마감하시겠습니까?`)) return;
+            td.completedRounds.push(round);
+            alert('마감 완료');
+            renderRoundTabs(); renderInputTable();
+            renderViewRoundSelect();
+        }
+
+        function openCancelModal() { document.getElementById('cancelModal').style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function confirmCancelFinalize() {
+            const reason = document.querySelector('input[name="cancelReason"]:checked');
+            if (!reason) { alert('사유 선택 필요'); return; }
+            const name = document.getElementById('currentTeacher').value;
+            const paper = project.papers[currentPaperIdx];
+            const td = paper.teacherData[name];
+            const round = paper.currentRound;
+            const idx = td.completedRounds.indexOf(round);
+            if (idx > -1) td.completedRounds.splice(idx, 1);
+            alert('마감 취소됨');
+            closeModal('cancelModal');
+            renderRoundTabs(); renderInputTable();
+            renderViewRoundSelect();
+        }
+
+        // === 조회 기능 ===
+        function showTeacherView() {
+            const paper = project.papers[currentPaperIdx];
+            const cats = paper.categories;
+            const mode = paper.scoreMode || 5;
+            const headers = mode === 5 ? ['A/B', 'B/C', 'C/D', 'D/E', 'E'] : ['A/B', 'B/C', 'C/D', 'D/E'];
+            const viewRound = document.getElementById('viewRoundSelect')?.value ?? paper.currentRound;
+            const roundIdx = parseInt(viewRound);
+
+            let html = '<div class="info-box" style="background:#fef3c7;border-color:#fcd34d;color:#92400e;margin-bottom:15px;">⚠️ <strong>적색 표시</strong>: 동일 문항범주 내 교사간 정답률 차이가 20% 이상인 경우입니다.</div>';
+            html += `<h4>📋 교사별 입력정보 (${roundIdx + 1}라운드)</h4><table><thead><tr><th>유형</th><th>난이도</th><th>교사</th>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+
+            cats.forEach((cat, ci) => {
+                // 각 컬럼별 모든 교사의 값 수집
+                const colValues = [];
+                for (let c = 0; c < mode; c++) colValues.push([]);
+
+                project.teachers.forEach(t => {
+                    const td = paper.teacherData[t];
+                    if (!td || !td.rounds[roundIdx] || !td.rounds[roundIdx][ci]) return;
+                    const vals = td.rounds[roundIdx][ci];
+                    for (let c = 0; c < mode; c++) {
+                        if (vals[c] !== null && vals[c] !== undefined) {
+                            colValues[c].push(parseFloat(vals[c]));
+                        }
+                    }
+                });
+
+                // 최대-최소 차이 계산하여 20 이상이면 플래그
+                const diffFlags = colValues.map(arr => {
+                    if (arr.length < 2) return false;
+                    return (Math.max(...arr) - Math.min(...arr)) >= 20;
+                });
+
+                project.teachers.forEach(t => {
+                    const td = paper.teacherData[t];
+                    if (!td) return;
+                    const vals = td.rounds[roundIdx] && td.rounds[roundIdx][ci] ? td.rounds[roundIdx][ci] : Array(mode).fill('-');
+                    html += `<tr><td>${cat.type}</td><td>${cat.difficulty}</td><td>${t}</td>`;
+                    for (let c = 0; c < mode; c++) {
+                        const v = vals[c] !== null && vals[c] !== undefined ? vals[c] : '-';
+                        const cellClass = diffFlags[c] ? 'diff-alert' : '';
+                        html += `<td class="${cellClass}">${v}</td>`;
+                    }
+                    html += '</tr>';
+                });
+            });
+            html += '</tbody></table>';
+            document.getElementById('viewContainer').innerHTML = html;
+        }
+
+        function showCategoryView() {
+            const paper = project.papers[currentPaperIdx];
+            const cats = paper.categories;
+            const viewRound = document.getElementById('viewRoundSelect')?.value ?? paper.currentRound;
+            const roundIdx = parseInt(viewRound);
+            const mode = paper.scoreMode || 5;
+            const levels = mode === 5 ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'];
+
+            let html = `<h4>📊 문항 범주별 상세 통계 (${roundIdx + 1}라운드)</h4>`;
+            html += '<div style="overflow-x:auto;"><table><thead><tr><th rowspan="2">문항유형</th><th rowspan="2">난이도</th>';
+            levels.forEach(lv => {
+                html += `<th colspan="4" style="text-align:center;background:#e0f2fe;">${lv}</th>`;
+            });
+            html += '</tr><tr>';
+            levels.forEach(() => {
+                html += '<th>평균</th><th>표준편차</th><th>최솟값</th><th>최댓값</th>';
+            });
+            html += '</tr></thead><tbody>';
+
+            cats.forEach((cat, ci) => {
+                // 각 레벨별 데이터 수집
+                const levelData = levels.map(() => []);
+
+                project.teachers.forEach(t => {
+                    const td = paper.teacherData[t];
+                    if (!td || !td.rounds[roundIdx] || !td.rounds[roundIdx][ci]) return;
+                    const vals = td.rounds[roundIdx][ci];
+                    for (let c = 0; c < levels.length; c++) {
+                        if (vals[c] !== null && vals[c] !== undefined) {
+                            levelData[c].push(parseFloat(vals[c]));
+                        }
+                    }
+                });
+
+                html += `<tr><td>${cat.type}</td><td>${cat.difficulty}</td>`;
+                levelData.forEach(arr => {
+                    if (arr.length === 0) {
+                        html += '<td>-</td><td>-</td><td>-</td><td>-</td>';
+                    } else {
+                        const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+                        const std = Math.sqrt(arr.reduce((a, b) => a + (b - avg) ** 2, 0) / arr.length);
+                        const min = Math.min(...arr);
+                        const max = Math.max(...arr);
+                        html += `<td>${avg.toFixed(2)}</td><td>${std.toFixed(2)}</td><td>${min.toFixed(0)}</td><td>${max.toFixed(0)}</td>`;
+                    }
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table></div>';
+            document.getElementById('viewContainer').innerHTML = html;
+        }
+
+        function showFinalView() {
+            const paper = project.papers[currentPaperIdx];
+            const cats = paper.categories;
+            const viewRound = document.getElementById('viewRoundSelect')?.value ?? paper.currentRound;
+            const roundIdx = parseInt(viewRound);
+            const mode = paper.scoreMode || 5;
+            const headers = mode === 5 ? ['A/B', 'B/C', 'C/D', 'D/E', 'E/미도달'] : ['A/B', 'B/C', 'C/D', 'D/E'];
+
+            // 각 교사별로 전체 점수 계산
+            const teacherScores = headers.map(() => []);
+
+            project.teachers.forEach(t => {
+                const td = paper.teacherData[t];
+                if (!td || !td.rounds[roundIdx]) return;
+
+                // 해당 모드(4/5)에 필요한 컬럼들이 모두 채워졌는지 확인
+                const isComplete = td.rounds[roundIdx].length >= cats.length && td.rounds[roundIdx].every(row => {
+                    if (!row) return false;
+                    for (let n = 0; n < headers.length; n++) {
+                        if (row[n] === null || row[n] === undefined || row[n] === '') return false;
+                    }
+                    return true;
+                });
+
+                if (!isComplete) return;
+
+                const scores = headers.map(() => 0);
+                cats.forEach((cat, ci) => {
+                    const vals = td.rounds[roundIdx][ci];
+                    for (let vi = 0; vi < headers.length; vi++) {
+                        scores[vi] += cat.totalScore * (parseFloat(vals[vi]) / 100);
+                    }
+                });
+                scores.forEach((s, i) => teacherScores[i].push(s));
+            });
+
+            let html = `<h4>🏆 최종 예상 추정분할점수 (${roundIdx + 1}라운드)</h4>`;
+            html += '<table><thead><tr><th>구분</th>';
+            headers.forEach(h => html += `<th>${h}</th>`);
+            html += '</tr></thead><tbody>';
+
+            // 평균
+            html += '<tr><td style="font-weight:bold;">평균</td>';
+            teacherScores.forEach(arr => {
+                const avg = arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+                html += `<td style="font-weight:bold;color:#1e40af;">${avg.toFixed(2)}</td>`;
+            });
+            html += '</tr>';
+
+            // 표준편차
+            html += '<tr><td style="font-weight:bold;">표준편차</td>';
+            teacherScores.forEach(arr => {
+                if (arr.length === 0) { html += '<td>-</td>'; return; }
+                const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+                const std = Math.sqrt(arr.reduce((a, b) => a + (b - avg) ** 2, 0) / arr.length);
+                html += `<td>${std.toFixed(2)}</td>`;
+            });
+            html += '</tr>';
+
+            // 최솟값
+            html += '<tr><td style="font-weight:bold;">최솟값</td>';
+            teacherScores.forEach(arr => {
+                html += `<td>${arr.length > 0 ? Math.min(...arr).toFixed(2) : '-'}</td>`;
+            });
+            html += '</tr>';
+
+            // 최댓값
+            html += '<tr><td style="font-weight:bold;">최댓값</td>';
+            teacherScores.forEach(arr => {
+                html += `<td>${arr.length > 0 ? Math.max(...arr).toFixed(2) : '-'}</td>`;
+            });
+            html += '</tr>';
+
+            html += '</tbody></table>';
+            document.getElementById('viewContainer').innerHTML = html;
+        }
+
+        // === 라운드별 조회 기능 ===
+        function refreshViewByRound() {
+            const select = document.getElementById('viewRoundSelect');
+            if (!select) return;
+            project.papers[currentPaperIdx].currentRound = parseInt(select.value);
+            // 현재 보이는 뷰가 있으면 갱신
+            const vc = document.getElementById('viewContainer');
+            if (vc && vc.innerHTML.includes('교사별')) showTeacherView();
+            else if (vc && vc.innerHTML.includes('예상')) showFinalView();
+        }
+
+        function getViewRound() {
+            const select = document.getElementById('viewRoundSelect');
+            return select ? parseInt(select.value) : project.papers[currentPaperIdx].currentRound;
+        }
+
+        // === 추정분할점수 산출결과 모달 ===
+        function calculateRoundResult(roundIdx) {
+            const paper = project.papers[currentPaperIdx];
+            const cats = paper.categories;
+            const mode = paper.scoreMode || 5;
+            const cols = mode === 5 ? 5 : 4;
+            const sums = Array(cols).fill(0);
+            let cnt = 0;
+
+            project.teachers.forEach(t => {
+                const td = paper.teacherData[t];
+                if (!td || !td.rounds[roundIdx]) return;
+
+                const isComplete = td.rounds[roundIdx].length >= cats.length && td.rounds[roundIdx].every(row => {
+                    if (!row) return false;
+                    for (let n = 0; n < cols; n++) {
+                        if (row[n] === null || row[n] === undefined || row[n] === '') return false;
+                    }
+                    return true;
+                });
+
+                if (isComplete) {
+                    cats.forEach((cat, ci) => {
+                        const vals = td.rounds[roundIdx][ci];
+                        for (let vi = 0; vi < cols; vi++) {
+                            sums[vi] += cat.totalScore * (parseFloat(vals[vi]) / 100);
+                        }
+                    });
+                    cnt++;
+                }
+            });
+            return { avgs: sums.map(s => cnt > 0 ? (s / cnt) : 0), cnt };
+        }
+
+        function openResultModal() {
+            const paper = project.papers[currentPaperIdx];
+            const maxRounds = Math.max(...project.teachers.map(t => paper.teacherData[t]?.rounds?.length || 0));
+
+            if (maxRounds === 0) {
+                alert('입력된 라운드 데이터가 없습니다.');
+                return;
+            }
+
+            let html = '<div style="overflow-x:auto;">';
+            html += '<table><thead><tr><th>라운드</th><th>참여교사</th><th>A/B</th><th>B/C</th><th>C/D</th><th>D/E</th><th>E/미도달</th><th>선택</th></tr></thead><tbody>';
+
+            for (let r = 0; r < maxRounds; r++) {
+                const result = calculateRoundResult(r);
+                const isSelected = paper.selectedResultRound === r;
+                html += `<tr style="${isSelected ? 'background:#dbeafe;' : ''}">
+                    <td style="font-weight:bold;">${r + 1}라운드</td>
+                    <td>${result.cnt}명</td>
+                    ${result.avgs.map(a => `<td style="font-weight:bold;color:#1e40af;">${a.toFixed(2)}</td>`).join('')}
+                    <td><button class="btn ${isSelected ? 'btn-success' : 'btn-dark'}" onclick="selectResultRound(${r})">${isSelected ? '✓ 선택됨' : '선택'}</button></td>
+                </tr>`;
+            }
+            html += '</tbody></table></div>';
+
+            // 선택된 라운드 정보
+            if (paper.selectedResultRound !== undefined) {
+                const selResult = calculateRoundResult(paper.selectedResultRound);
+                html += `<div class="info-box" style="margin-top:15px;background:#dcfce7;border-color:#86efac;">
+                    ✅ <strong>${paper.selectedResultRound + 1}라운드</strong>가 최종 결과로 선택되었습니다.
+                </div>`;
+            }
+
+            document.getElementById('resultModalContent').innerHTML = html;
+            document.getElementById('resultModal').style.display = 'flex';
+        }
+
+        function selectResultRound(roundIdx) {
+            project.papers[currentPaperIdx].selectedResultRound = roundIdx;
+            openResultModal(); // 모달 갱신
+        }
+
+        function exportRoundResultsToExcel() {
+            const paper = project.papers[currentPaperIdx];
+            const maxRounds = Math.max(...project.teachers.map(t => paper.teacherData[t]?.rounds?.length || 0));
+
+            const data = [['라운드', '참여교사', 'A/B', 'B/C', 'C/D', 'D/E', 'E/미도달']];
+            for (let r = 0; r < maxRounds; r++) {
+                const result = calculateRoundResult(r);
+                data.push([`${r + 1}라운드`, `${result.cnt}명`, ...result.avgs.map(a => a.toFixed(2))]);
+            }
+
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '추정분할점수');
+
+            const now = new Date();
+            const filename = `추정분할점수_${paper.name}_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.xlsx`;
+            XLSX.writeFile(wb, filename);
+        }
+
+        function openApprovalFromResult() {
+            const paper = project.papers[currentPaperIdx];
+            if (paper.selectedResultRound === undefined) {
+                alert('먼저 승인요청할 라운드를 선택해주세요.');
+                return;
+            }
+            closeModal('resultModal');
+            // 승인요청 모달 열기
+            const select = document.getElementById('approvalRoundSelect');
+            select.innerHTML = `<option value="${paper.selectedResultRound}">${paper.selectedResultRound + 1}라운드 (선택됨)</option>`;
+            document.getElementById('approvalModal').style.display = 'flex';
+        }
+
+        // === 엑셀 출력 개선: 모든 라운드 출력 ===
+        function exportTeacherInputToExcel() {
+            const name = document.getElementById('currentTeacher').value;
+            if (!name) return;
+            const paper = project.papers[currentPaperIdx];
+            const td = paper.teacherData[name];
+            const mode = paper.scoreMode || 5;
+            const headers = mode === 5 ? ['A/B', 'B/C', 'C/D', 'D/E', 'E/미도달'] : ['A/B', 'B/C', 'C/D', 'D/E'];
+
+            const wb = XLSX.utils.book_new();
+            td.rounds.forEach((roundData, rIdx) => {
+                const data = [['유형', '난이도', ...headers]];
+                paper.categories.forEach((cat, ci) => {
+                    const vals = roundData[ci] || Array(mode).fill('');
+                    data.push([cat.type, cat.difficulty, ...vals]);
+                });
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                XLSX.utils.book_append_sheet(wb, ws, `${rIdx + 1}라운드`);
+            });
+            XLSX.writeFile(wb, `입력값_${name}_${paper.name}.xlsx`);
+        }
+
+        // === 수행평가 탭 ===
+        // === 수행평가 탭 ===
+        function renderPerfTab() {
+            const paper = project.papers[currentPaperIdx] || project.papers[0];
+            const mode = paper.scoreMode || 5;
+            // % 제거 및 단순 명칭 사용
+            const headerLabels = mode === 5 ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'];
+            const indices = mode === 5 ? [0, 1, 2, 3, 4] : [0, 1, 2, 3];
+
+            let html = `
+            <div style="margin-bottom:15px; display:flex; gap:20px; align-items:center;">
+                <label style="cursor:pointer; font-weight:bold;">
+                    <input type="radio" name="perfInputMode" value="all" ${(!project.perfInputMode || project.perfInputMode === 'all') ? 'checked' : ''} onchange="changePerfMode('all')"> 전체영역
+                </label>
+                <label style="cursor:pointer; font-weight:bold;">
+                    <input type="radio" name="perfInputMode" value="each" ${(project.perfInputMode === 'each') ? 'checked' : ''} onchange="changePerfMode('each')"> 영역별
+                </label>
+            </div>`;
+
+            html += `<table>
+                <thead id="perfCutsThead">
+                    <tr><th>영역명</th><th>배점</th>${headerLabels.map(h => `<th>${h}</th>`).join('')}</tr>
+                </thead>
+                <tbody id="perfCutsTbody">`;
+
+            if (!project.perfInputMode || project.perfInputMode === 'all') {
+                // 전체영역 모드: 1줄만 표시, 영역명은 '전체 영역', 배점은 전체 배점 합계
+                const totalScore = project.perfs.reduce((s, p) => s + p.score, 0);
+                // project.perfTotalCuts 초기화 확인
+                if (!project.perfTotalCuts) project.perfTotalCuts = Array(5).fill(null);
+
+                html += `<tr>
+                    <td>전체 영역</td>
+                    <td>${totalScore}</td>
+                    ${indices.map(j => {
+                    const val = project.perfTotalCuts[j];
+                    return `<td><input type="number" value="${val === null ? '' : val}" style="width:80px" onchange="updatePerfTotalCut(${j}, this.value)"></td>`;
+                }).join('')}
+                </tr>`;
+            } else {
+                // 영역별 모드: 각 수행평가별로 표시
+                html += project.perfs.map((p, i) =>
+                    `<tr>
+                        <td>${p.name}</td>
+                        <td>${p.score}</td>
+                        ${indices.map(j => {
+                        const val = p.cuts[j];
+                        return `<td><input type="number" value="${val === null ? '' : val}" style="width:60px" onchange="updatePerfCut(${i}, ${j}, this.value)"></td>`;
+                    }).join('')}
+                    </tr>`
+                ).join('');
+            }
+            html += `</tbody></table>`;
+
+            // 기존 테이블 덮어쓰기 위해 section-box 내부 구조 변경이 필요하지만, 
+            // 여기서는 기존 table 태그를 포함하여 다시 그림.
+            // 기존 HTML 구조상 table이 이미 있으므로, wrapper div를 조작하거나 table innerHTML만 바꾸는 것보다
+            // section-box 내용을 전체 재구성하는 것이 깔끔함.
+            // 이를 위해 renderPerfTab에서는 section-box의 내용을 직접 수정하도록 변경 필요.
+            // 하지만 현재 구조상 innerHTML 조작이 복잡하므로, 
+            // 기존 id="perfCutsThead", id="perfCutsTbody"를 사용하는 대신
+            // 상위 컨테이너를 타겟팅하는 것이 좋음. HTML 구조상 "📝 수행평가 등급별 점수 입력" 섹션 박스 내부를 갱신해야함.
+            // 편의상 section-title 다음 요소들을 갱신하기 위해 아래와 같이 접근.
+
+            const container = document.querySelector('#tab-2 .section-box table').parentNode; // table의 부모 div 찾아야 함
+            // 위 방법이 불확실하므로, perfCutsThead가 있는 table을 찾아 교체하는 방식 사용.
+            const oldTable = document.getElementById('perfCutsThead').parentNode;
+            const parentDiv = oldTable.parentNode;
+
+            // 모드 선택 라디오 버튼이 들어갈 공간 확보를 위해 parentDiv의 첫번째 자식(title) 뒤에 div 삽입, 
+            // table은 그 뒤에.
+
+            // 더 간단하게: HTML 문자열을 완전히 새로 구성해서 parentDiv.innerHTML에 넣음 (title 포함)
+            parentDiv.innerHTML = `
+                <div class="section-title">📝 수행평가 등급별 점수 입력</div>
+                <div style="margin-bottom:15px; display:flex; gap:20px; align-items:center;">
+                    <label style="cursor:pointer; font-weight:bold;">
+                        <input type="radio" name="perfInputMode" value="all" ${(!project.perfInputMode || project.perfInputMode === 'all') ? 'checked' : ''} onchange="changePerfMode('all')"> 전체영역
+                    </label>
+                    <label style="cursor:pointer; font-weight:bold;">
+                        <input type="radio" name="perfInputMode" value="each" ${(project.perfInputMode === 'each') ? 'checked' : ''} onchange="changePerfMode('each')"> 영역별
+                    </label>
+                </div>
+                <table>
+                    <thead id="perfCutsThead">
+                        <tr><th>영역명</th><th>배점</th>${headerLabels.map(h => `<th>${h}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody id="perfCutsTbody">
+                        ${(!project.perfInputMode || project.perfInputMode === 'all') ?
+                    `<tr>
+                                <td>전체 영역</td>
+                                <td>${project.perfs.reduce((s, p) => s + p.score, 0)}</td>
+                                ${indices.map(j => {
+                        const val = (project.perfTotalCuts && project.perfTotalCuts[j] !== undefined) ? project.perfTotalCuts[j] : null;
+                        return `<td><input type="number" value="${val === null ? '' : val}" style="width:80px" onchange="updatePerfTotalCut(${j}, this.value)"></td>`;
+                    }).join('')}
+                            </tr>`
+                    :
+                    project.perfs.map((p, i) =>
+                        `<tr>
+                                    <td>${p.name}</td>
+                                    <td>${p.score}</td>
+                                    ${indices.map(j => {
+                            const val = p.cuts[j];
+                            return `<td><input type="number" value="${val === null ? '' : val}" style="width:60px" onchange="updatePerfCut(${i}, ${j}, this.value)"></td>`;
+                        }).join('')}
+                                </tr>`
+                    ).join('')
+                }
+                    </tbody>
+                </table>
+            `;
+
+            calcPerfResult();
+        }
+
+        function changePerfMode(mode) {
+            project.perfInputMode = mode;
+            if (mode === 'all' && !project.perfTotalCuts) {
+                project.perfTotalCuts = Array(5).fill(null);
+            }
+            renderPerfTab();
+        }
+
+        function updatePerfTotalCut(idx, val) {
+            if (!project.perfTotalCuts) project.perfTotalCuts = Array(5).fill(null);
+            project.perfTotalCuts[idx] = val === '' ? null : Number(val);
+            calcPerfResult();
+        }
+
+        function updatePerfCut(perfIdx, cutIdx, val) {
+            project.perfs[perfIdx].cuts[cutIdx] = val === '' ? null : Number(val);
+            calcPerfResult();
+        }
+
+        function calcPerfResult() {
+            const paper = project.papers[currentPaperIdx] || project.papers[0];
+            const mode = paper.scoreMode || 5;
+            const levels = mode === 5 ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D']; // A/B, B/C 대신 A, B, C, D 사용 (요청사항)
+            // 요약 카드 제목은 A, B, C... 로 표시 (요청사항 반영)
+            const displayLevels = mode === 5 ? ['A/B', 'B/C', 'C/D', 'D/E', 'E/미도달'] : ['A/B', 'B/C', 'C/D', 'D/E']; // 결과창은 유지? 요청은 "제목을 ... 입력칸에는" 이었음. 
+            // 사용자 요청: "수행평가는 A/B... 아니라 A, B, C, D, E로 제목을 만들고... 점수 입력칸에는..." 
+            // -> 입력 테이블 헤더는 A, B... 로 변경함.
+            // "또한 수행평가는 전체영역과... 입력된 수행평가명(만점)으로 표기할 것."
+
+            // 결과 그리드(요약 카드)는 "A/B" 등을 유지해야 하는지, "A"로 바꿔야 하는지 명확하지 않으나,
+            // "제목을 ...으로 만들고" 가 입력 테이블 헤더를 의미하는 것으로 보임.
+            // 일단 결과 카드는 성취수준 명칭(A/B 등)을 그대로 두는 것이 논리적으로 맞음(컷오프 점수이므로).
+            // 하지만 만약 사용자가 결과 카드도 A, B, C.. 를 원한다면 수정 필요. 
+            // 문맥상 입력 테이블 헤더 변경 요청이 강력하므로 결과 카드는 컷오프 의미를 살려 A/B 유지 혹은 A로 변경?
+            // "수행평가 영역별 A~E 등급 점수를 입력합니다" 문구로 보아 A등급 컷, B등급 컷... 의 의미로 A, B, C.. 를 쓰는 듯함.
+            // 안전하게 결과 카드도 A, B... 로 통일하는 것이 좋아보임 (입력값과 일치).
+            // 그러나 기존 로직상 A/B가 컷오프를 의미함. 
+            // 일단 입력 테이블은 확실히 A, B.. 로 변경했음. 결과 카드는 기존 유지하되 헤더만 변경 고려.
+            // 여기서는 결과 카드도 A, B... 로 변경하여 일관성 유지.
+
+            const grid = document.getElementById('perfResultGrid');
+            let html = '';
+
+            levels.forEach((lv, i) => { // levels는 이미 A, B... 로 설정됨 (renderPerfTab 상단에서)
+                // 계산 로직
+                let total = 0;
+                if (!project.perfInputMode || project.perfInputMode === 'all') {
+                    // 전체영역일 때 전제 만점 대비 비율로 환산?
+                    // 보통 전체영역 입력은 "전체 만점에 대한 컷오프 점수"를 입력함.
+                    // 따라서 입력된 점수 그대로가 해당 수준의 컷오프임.
+                    // 하지만 "반영비율"을 고려해야 함.
+                    // 전체영역 모드일 때는 각 수행평가의 비율 합계(보통 100%라 가정하거나, 수행평가 비중만큼)가 적용되어야 하나?
+                    // 아니면 입력된 점수 자체가 '환산 점수'인가 '원점수'인가?
+                    // 문항정보표 등의 흐름상 "원점수 컷"을 입력하면 "환산 점수"를 계산해주는 구조임.
+                    // 전체영역 원점수 컷을 입력했다면, (원점수 / 전체배점) * 수행평가비율총합?
+
+                    const totalScore = project.perfs.reduce((s, p) => s + p.score, 0);
+                    const totalRatio = project.perfs.reduce((s, p) => s + p.ratio, 0);
+                    const cutScore = (project.perfTotalCuts && project.perfTotalCuts[i] !== null) ? project.perfTotalCuts[i] : 0;
+
+                    // 점수가 0이면 계산 0
+                    if (totalScore > 0 && cutScore !== null) {
+                        total = (cutScore / totalScore) * totalRatio;
+                    }
+                } else {
+                    // 영역별 입력
+                    total = project.perfs.reduce((s, p) => {
+                        const cut = (p.cuts[i] !== null) ? p.cuts[i] : 0;
+                        return s + (cut * p.ratio / 100); // 100점 만점 기준이 아니라 p.score 기준 비례식?
+                        // 기존 로직: s + (p.cuts[i] * p.ratio / 100) -> 이건 p.cuts[i]가 100점 만점 환산점수일 때 식임?
+                        // 아니면 p.cuts[i]가 원점수일 때?
+                        // 기존 코드: p.score는 배점(예: 100). p.cuts[i]는 점수.
+                        // 만약 배점이 100이면 (점수 * 비율 / 100) 맞음.
+                        // 만약 배점이 20점이면? (20점 만점에 18점 입력) -> (18 / 20) * 비율 이어야 함.
+                        // 하지만 기존 코드는 `c * p.ratio / 100` 였음. 이는 "입력값을 100점 만점 기준 점수"로 가정했거나 "배점이 100"이라 가정한 것.
+                        // 사용자는 "배점" 컬럼이 있고 100이라 되어 있음.
+                        // 일반적인 공식: (획득점수 / 배점) * 반영비율
+                        // 따라서 (p.cuts[i] / p.score) * p.ratio 가 정확함.
+                        // 기존 코드가 `c * p.ratio / 100` 인 이유는 p.score가 분모에 안 들어가고 100이 들어갔기 때문.
+                        // 이번 기회에 (cut / p.score) * p.ratio 로 수정하는 것이 정확함. (p.score가 0이면 0)
+
+                        if (p.score === 0) return s;
+                        return s + ((cut / p.score) * p.ratio);
+                    }, 0);
+                }
+
+                // 표시용 라벨: 컷오프의 의미를 살리기 위해 A/B 등으로 재매핑하거나 A, B 그대로 사용.
+                // 사용자 요청은 "수행평가는 A/B... 아니라 A, B...로 제목을 만들고" 였으므로 A, B.. 사용
+                html += `<div class="summary-card"><div style="font-weight:bold;color:#1e40af;margin-bottom:8px;">${displayLevels[i]}</div><div class="score-val">${total.toFixed(2)}</div></div>`;
+            });
+            grid.innerHTML = html;
+        }
+
+        // === 최종결과 ===
+        function calculateFinal() {
+            const grid = document.getElementById('finalResultGrid');
+            const breakdown = document.getElementById('detailBreakdown');
+
+            const paper = project.papers[currentPaperIdx] || project.papers[0];
+            const mode = paper.scoreMode || 5;
+            const levels = mode === 5 ? ['A/B', 'B/C', 'C/D', 'D/E', 'E/미도달'] : ['A/B', 'B/C', 'C/D', 'D/E'];
+
+            let paperTotals = [0, 0, 0, 0, 0], perfTotals = [0, 0, 0, 0, 0];
+            let paperRows = '';
+
+            // 지필평가 합산
+            project.papers.forEach(paper => {
+                if (paper.categories.length === 0) {
+                    paperRows += `<tr><td>${paper.name}</td><td>${paper.ratio}%</td><td colspan="5">-</td></tr>`;
+                    return;
+                }
+
+                // 선택된 라운드가 있으면 그것을, 없으면 현재 라운드를 사용
+                const targetRound = paper.selectedResultRound !== undefined ? paper.selectedResultRound : paper.currentRound;
+
+                let cnt = 0;
+                const sums = [0, 0, 0, 0, 0];
+                const mode = paper.scoreMode || 5;
+                const cols = mode === 5 ? 5 : 4;
+
+                project.teachers.forEach(t => {
+                    const td = paper.teacherData[t];
+                    if (!td || !td.rounds[targetRound]) return;
+
+                    const isComplete = td.rounds[targetRound].length >= paper.categories.length && td.rounds[targetRound].every(row => {
+                        if (!row) return false;
+                        for (let n = 0; n < cols; n++) {
+                            if (row[n] === null || row[n] === undefined || row[n] === '') return false;
+                        }
+                        return true;
+                    });
+
+                    if (isComplete) {
+                        paper.categories.forEach((cat, ci) => {
+                            const vals = td.rounds[targetRound][ci];
+                            for (let vi = 0; vi < cols; vi++) {
+                                sums[vi] += cat.totalScore * (parseFloat(vals[vi]) / 100);
+                            }
+                        });
+                        cnt++;
+                    }
+                });
+
+                if (cnt > 0) {
+                    const avgs = sums.map(s => s / cnt);
+                    avgs.forEach((s, i) => paperTotals[i] += s * paper.ratio / 100);
+
+                    paperRows += `<tr><td>${paper.name} <span style="font-size:0.8em;color:#666;">(${targetRound + 1}R)</span></td><td>${paper.ratio}%</td>`;
+                    avgs.forEach((v, i) => {
+                        if (mode === 4 && i === 4) paperRows += '<td>-</td>';
+                        else paperRows += `<td>${v.toFixed(2)}</td>`;
+                    });
+                    paperRows += '</tr>';
+                } else {
+                    paperRows += `<tr><td>${paper.name}</td><td>${paper.ratio}%</td><td colspan="5">-</td></tr>`;
+                }
+            });
+
+            // 수행평가 합산
+            perfTotals.fill(0);
+
+            if (!project.perfInputMode || project.perfInputMode === 'all') {
+                // 전체영역 모드 계산
+                const totalScore = project.perfs.reduce((s, p) => s + p.score, 0);
+                const totalRatio = project.perfs.reduce((s, p) => s + p.ratio, 0);
+
+                levels.forEach((lv, i) => {
+                    // 4단계 모드일 때 5번째(E) 처리
+                    const curPaper = project.papers[currentPaperIdx] || project.papers[0];
+                    const mode = curPaper.scoreMode || 5;
+                    if (mode === 4 && i === 4) return;
+
+                    const cutScore = (project.perfTotalCuts && project.perfTotalCuts[i] !== null) ? project.perfTotalCuts[i] : 0;
+                    if (totalScore > 0) {
+                        perfTotals[i] = (cutScore / totalScore) * totalRatio;
+                    }
+                });
+            } else {
+                // 영역별 모드 계산
+                project.perfs.forEach(p => {
+                    p.cuts.forEach((c, i) => {
+                        // mode 4일 때 E(index 4)는 합산하지 않음
+                        const curPaper = project.papers[currentPaperIdx] || project.papers[0];
+                        const mode = curPaper.scoreMode || 5;
+                        if (mode === 4 && i === 4) return;
+
+                        const val = (c !== null) ? c : 0;
+                        if (p.score > 0) {
+                            perfTotals[i] += (val / p.score) * p.ratio;
+                        }
+                    });
+                });
+            }
+
+            const finals = paperTotals.map((p, i) => p + perfTotals[i]);
+
+            grid.innerHTML = levels.map((lv, i) =>
+                `<div class="summary-card"><div style="font-weight:bold;color:#1e40af;margin-bottom:10px;">${lv}</div><div class="score-val">${finals[i].toFixed(2)}</div><div style="font-size:0.85rem;color:#64748b;">정기시험 ${paperTotals[i].toFixed(1)} + 수행 ${perfTotals[i].toFixed(1)}</div></div>`
+            ).join('');
+
+            // === 상세 산출 내역 테이블 생성 (2단 헤더) ===
+
+            // 헤더 생성
+            // const levels는 상단에서 이미 선언됨
+            let bhtml = `<table>
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="vertical-align:middle;">정기시험/수행<br>구분</th>
+                        <th rowspan="2" style="vertical-align:middle;">고사/영역</th>
+                        <th rowspan="2" style="vertical-align:middle;">반영비율(%)</th>
+                        <th rowspan="2" style="vertical-align:middle;">배점</th>
+                        <th colspan="${levels.length}" style="text-align:center;">성취수준별분할점수</th>
+                    </tr>
+                    <tr>
+                        ${levels.map(l => `<th>${l}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            // 지필평가 행들
+            const paperCount = project.papers.length;
+
+            // paperRows는 위에서 이미 계산됨 (문자열). 하지만 포맷이 다름(구분, 비율, 점수들).
+            // 따라서 위 loop에서 문자열을 만들지 말고 데이터만 뽑아내는게 좋았으나, 
+            // 여기서는 기존 로직 활용 위해 project.papers를 다시 순회하여 새로운 포맷의 행을 만듦.
+
+            // paperTotals 계산 로직은 위에서 이미 수행됨. 재사용하지 않고 새로 그리는게 낫지만, 
+            // 위쪽 forEach에서 paperRows += ... 하는 부분을 여기서는 사용하지 않으므로 무시됨.
+            // 단, avgs 데이터가 필요함. 위 로직은 avgs를 paperTotals에 합산만 하고 값 저장을 안함.
+            // 따라서 정확한 데이터를 위해 위쪽 루프 개선이 필요.
+            // 하지만 복잡성을 줄이기 위해 위에서는 총점만 계산하고, 여기서는 화면 표시용 데이터를 다시 계산하거나
+            // 위 루프에서 데이터를 배열에 저장해두는 것이 좋음.
+
+            // 여기서는 위쪽 루프를 "총점 계산용"으로만 쓰고, 아래에서 "표시용" 루프를 새로 돌림.
+
+            // --- 지필평가 루프 (표시용) ---
+            let paperDataRows = [];
+            project.papers.forEach(paper => {
+                const subject = project.info.subject || '과목명';
+                const nameStr = `[${subject}] ${paper.name}`;
+                // 만점(배점)은 paper.score (없으면 100)
+                const score = paper.score || 100;
+
+                // 점수 계산 (위 로직 복사)
+                const targetRound = paper.selectedResultRound !== undefined ? paper.selectedResultRound : paper.currentRound;
+                const mode = paper.scoreMode || 5;
+                const cols = mode === 5 ? 5 : 4;
+                let cnt = 0;
+                let sums = [0, 0, 0, 0, 0];
+                let rowVals = Array(cols).fill('-'); // 기본값
+
+                project.teachers.forEach(t => {
+                    const td = paper.teacherData[t];
+                    if (!td || !td.rounds[targetRound]) return;
+                    const isComplete = td.rounds[targetRound].length >= paper.categories.length && td.rounds[targetRound].every(row => {
+                        if (!row) return false;
+                        for (let n = 0; n < cols; n++) {
+                            if (row[n] === null || row[n] === undefined || row[n] === '') return false;
+                        }
+                        return true;
+                    });
+                    if (isComplete) {
+                        paper.categories.forEach((cat, ci) => {
+                            const vals = td.rounds[targetRound][ci];
+                            for (let vi = 0; vi < cols; vi++) {
+                                sums[vi] += cat.totalScore * (parseFloat(vals[vi]) / 100);
+                            }
+                        });
+                        cnt++;
+                    }
+                });
+
+                if (cnt > 0) {
+                    const avgs = sums.map(s => s / cnt);
+                    rowVals = avgs.map(v => v.toFixed(2));
+                }
+
+                // mode 4 처리
+                let displayVals = rowVals.slice(0, levels.length);
+                if (mode === 4) {
+                    // levels.length는 4. 
+                    // rowVals는 5개일 수 있음(로직상 sums가 5개).
+                    // mode 4이면 avgs도 5개(마지막 0).
+                }
+                // 위에서 slice 처리함
+
+                paperDataRows.push({
+                    name: nameStr,
+                    ratio: paper.ratio,
+                    score: score,
+                    vals: rowVals // 전체 5개 다 가짐, 표시는 levels에 맞춤
+                });
+            });
+
+            paperDataRows.forEach((p, i) => {
+                bhtml += `<tr>`;
+                if (i === 0) {
+                    bhtml += `<td rowspan="${paperDataRows.length}" style="vertical-align:middle; background:#f9fafb; font-weight:bold;">정기시험</td>`;
+                }
+                bhtml += `<td style="text-align:left; padding-left:10px;">${p.name}</td>
+                          <td>${p.ratio}</td>
+                          <td>${p.score}</td>
+                          ${levels.map((l, li) => {
+                    // mode 4일때 마지막 E는 - 표시?
+                    // 위 로직에서 rowVals에 값 있으면 표시.
+                    if (li >= p.vals.length) return '<td>-</td>';
+                    // 만약 해당 고사가 4단계인데 현재 표가 5단계라면?
+                    // levels는 현재 paper 기준 mode가 아니라 전체 기준?
+                    // levels는 calculateFinal 초반에 currentPaperIdx 기준으로 설정됨.
+                    // 따라서 현재 선택된 탭의 모드를 따름.
+                    return `<td>${p.vals[li] !== undefined ? p.vals[li] : '-'}</td>`;
+                }).join('')}
+                          </tr>`;
+            });
+
+            // --- 수행평가 루프 (표시용) ---
+            // 전체영역 모드일 때와 영역별 모드일 때 표시 방식
+            // 사용자 요청 이미지(2번째)를 보면 "수행 [공통국어1] [전체영역]" 처럼 나옴.
+            // 영역별이면 각 영역이 나올 것임.
+            const perfCount = project.perfs.length;
+            // 만약 전체영역 모드라면 1줄만 표시?
+            // "상세 산출 내역"은 개별 항목을 보여주는 것이 맞음.
+            // 하지만 project.perfInputMode === 'all' 이면 실제 데이터 구조상 perfs[i].score 등이 의미가 없고
+            // perfTotalCuts 하나만 의미가 있음.
+            // 그러나 사용자는 [전체영역]이라고 명시하길 원함.
+            // 만약 perfInputMode === 'all' 이면 project.perfs 데이터를 어떻게 표현?
+            // "전체 영역"이라는 이름의 1개 Row만 보여주는게 맞을 듯.
+
+            const subject = project.info.subject || '과목명';
+
+            if (!project.perfInputMode || project.perfInputMode === 'all') {
+                // 전체영역 1줄
+                const totalScore = project.perfs.reduce((s, p) => s + p.score, 0); // 배점 합계
+                const totalRatio = project.perfs.reduce((s, p) => s + p.ratio, 0);
+                const cuts = project.perfTotalCuts || [0, 0, 0, 0, 0];
+
+                bhtml += `<tr>
+                    <td style="vertical-align:middle; background:#f9fafb; font-weight:bold;">수행</td>
+                    <td style="text-align:left; padding-left:10px;">[${subject}] [전체영역]</td>
+                    <td>${totalRatio}</td>
+                    <td>${totalScore}</td>
+                    ${levels.map((l, i) => `<td>${cuts[i] !== null ? cuts[i] : '-'}</td>`).join('')}
+                 </tr>`;
+
+            } else {
+                // 영역별 n줄
+                project.perfs.forEach((p, i) => {
+                    bhtml += `<tr>`;
+                    if (i === 0) {
+                        bhtml += `<td rowspan="${perfCount}" style="vertical-align:middle; background:#f9fafb; font-weight:bold;">수행</td>`;
+                    }
+                    bhtml += `<td style="text-align:left; padding-left:10px;">[${subject}] ${p.name}</td>
+                              <td>${p.ratio}</td>
+                              <td>${p.score}</td>
+                              ${levels.map((l, li) => `<td>${p.cuts[li] !== null ? p.cuts[li] : '-'}</td>`).join('')}
+                              </tr>`;
+                });
+            }
+
+            bhtml += `</tbody></table>
+            
+            <!-- 최종 결과 행 (기존 삭제 후 부활? 아니면 상세내역에는 최종결과 안 넣음?) -->
+            <!-- 상세 내역 테이블 아래에 최종 결과 행을 넣는지 여부는 요청에 없으나, 
+                 기존에 소계, 최종 등을 보여주던 표를 대체하는 것이므로 
+                 최종 합계(학기말)는 보여주는 것이 좋을 수 있음. 
+                 하지만 요청사항은 "상세 산출 내역의 열 제목은..."하고 끝났고,
+                 별도로 "추정분할점수 산출 결과" 박스가 있으므로 여기에는 포함 안 해도 됨.
+                 사용자 이미지에도 아래쪽에 짤려있어서 최종 행이 있는지 불분명.
+                 일단 순수 내역만 표시하고, 최종 합산 값은 아래 '추정분할점수 산출 결과' 그리드(카드)가 대신함. -->
+            
+            `;
+
+            breakdown.innerHTML = bhtml;
+        }
+
+        // === 저장/불러오기 ===
+        function saveFullProject() {
+            project.info.year = document.getElementById('year').value;
+            project.info.semester = document.getElementById('semester').value;
+            project.info.subject = document.getElementById('subject').value;
+            const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            a.download = `나이스 추정분할점수 산출(${year}-${month}-${day}_${hours}${minutes}).json`;
+            a.click();
+        }
+
+        function loadFullProject(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                try {
+                    project = JSON.parse(ev.target.result);
+                    document.getElementById('year').value = project.info?.year || '2026';
+                    document.getElementById('semester').value = project.info?.semester || '1학기';
+                    document.getElementById('subject').value = project.info?.subject || '';
+                    if (project.accessGranted) switchTab(1);
+                    else switchTab(0);
+                    alert('✅ 불러오기 완료');
+                } catch (err) { alert('파일 오류'); }
+            };
+            reader.readAsText(file);
+        }
+
+
+
+        function exportFinalReport() { calculateFinal(); saveFullProject(); }
+
+        // 초기화
+        window.onload = function () { switchTab(0); };
+    </script>
+</body>
+
+</html>
