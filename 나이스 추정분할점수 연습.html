@@ -1,0 +1,1925 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEIS 문항정보표 기반 추정분할점수 산출</title>
+    <!-- SheetJS 라이브러리 로드 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f1f5f9;
+            --border: #cbd5e1;
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        /* 유효성 검사 실패 스타일 */
+        .invalid-input {
+            color: #dc2626 !important;
+            font-weight: bold;
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            min-height: 80vh;
+        }
+
+        /* 헤더 & 탭 */
+        header {
+            background: #1e293b;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            background: #334155;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            color: #94a3b8;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            color: white;
+            background: #475569;
+        }
+
+        .tab.active {
+            color: white;
+            background: var(--primary);
+            font-weight: bold;
+            border-bottom: 3px solid #60a5fa;
+        }
+
+        /* 컨텐츠 영역 */
+        .content {
+            padding: 30px;
+            display: none;
+        }
+
+        .content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 섹션 스타일 */
+        .section-box {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #0f172a;
+            border-left: 4px solid var(--primary);
+            padding-left: 10px;
+        }
+
+        /* 라디오 버튼 그룹 (설정용) */
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        /* 입력 폼 & 테이블 */
+        input[type="file"] {
+            border: 1px solid var(--border);
+            padding: 8px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .teacher-control {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        /* 테이블 내 select 스타일 보정 */
+        td select {
+            width: 80px;
+            text-align: center;
+            appearance: auto;
+            /* 기본 스타일 + 화살표 */
+            background: white;
+            padding-right: 25px;
+            /* 화살표 공간 */
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        button.danger:hover {
+            background: #dc2626;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.95rem;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #334155;
+            white-space: nowrap;
+        }
+
+        td input {
+            width: 70px;
+            text-align: center;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .total-row {
+            background: #eff6ff;
+            font-weight: bold;
+        }
+
+        /* 결과 강조 */
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: linear-gradient(to bottom right, #ffffff, #eff6ff);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #bfdbfe;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .delete-round-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            margin-left: -3px;
+            margin-right: 5px;
+            vertical-align: middle;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .delete-round-btn:hover {
+            background: #dc2626;
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            color: #1e40af;
+            font-size: 1rem;
+        }
+
+        .card .score {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #2563eb;
+            margin: 10px 0;
+        }
+
+        .card .desc {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .badge {
+            background: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .current-teacher {
+            color: var(--primary);
+            font-weight: bold;
+            margin-left: auto;
+        }
+
+        /* 알림 메시지 */
+        .alert-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background: #fff1f2;
+            color: #9f1239;
+            border: 1px solid #fecdd3;
+            display: none;
+        }
+
+        .round-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .round-tab {
+            padding: 8px 16px;
+            border: 1px solid #e2e8f0;
+            border-bottom: none;
+            background: #f8fafc;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .round-tab.active {
+            background: white;
+            color: #2563eb;
+            border-color: #2563eb;
+            border-bottom: 2px solid white;
+            margin-bottom: -2px;
+        }
+
+        .round-tab:hover:not(.active) {
+            background: #e2e8f0;
+        }
+
+        .round-tab.add-btn {
+            background: #ecfdf5;
+            color: #059669;
+            border-color: #a7f3d0;
+        }
+
+        .round-tab.add-btn:hover {
+            background: #d1fae5;
+        }
+
+        .warning-diff {
+            color: #dc2626 !important;
+            /* 적색 */
+            font-weight: bold;
+            border: 2px solid #dc2626 !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <div style="display:flex; align-items:center; width: 100%;">
+                <div>
+                    <h1>📊 지필평가 추정분할점수 산출</h1>
+                    <div style="font-size: 0.9rem; opacity: 0.8;">NEIS Ver. 1.0</div>
+                </div>
+                <div style="display:flex; gap:10px; margin-left: auto;">
+                    <input type="file" id="loadProjectInput" accept=".json" style="display:none;"
+                        onchange="loadProjectData(this)">
+                    <button onclick="document.getElementById('loadProjectInput').click()"
+                        style="background:#20bf6b; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                        📂 불러오기
+                    </button>
+                    <button onclick="saveProjectData()"
+                        style="background:#0f172a; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                        💾 저장하기
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('input')">1. 예상정답률입력</button>
+            <button class="tab" onclick="switchTab('teacherView')">2. 교사별 입력정보조회</button>
+            <button class="tab" onclick="switchTab('categoryView')">3. 문항범주별조회</button>
+            <button class="tab" onclick="switchTab('finalView')">4. 예상추정분할점수조회</button>
+        </div>
+
+        <!-- 1. 예상정답률 입력 탭 -->
+        <div id="tab-input" class="content active">
+
+            <div id="uploadAlert" class="alert-box">
+                🚨 엑셀 파일을 먼저 업로드해주세요. 필수 컬럼: <strong>문항번호, 배점, 난이도(O표시), 서답형/선택형 구분</strong>
+            </div>
+
+            <!-- 파일 업로드 섹션 -->
+            <div class="section-box">
+                <div class="section-title">📁 STEP 1: 문항정보표 업로드</div>
+                <input type="file" id="fileInput" accept=".xlsx, .xls" onchange="handleFileUpload(event)">
+                <p style="font-size:0.8rem; color:#64748b; margin-top:5px;">
+                    * 문항정보표 엑셀 파일(나이스 양식)을 업로드하세요.<br>
+                    * 자동으로 문항유형(선택/서답), 난이도(상/중/하), 배점을 인식합니다.
+                </p>
+            </div>
+
+            <!-- 업로드 결과 미리보기 섹션 -->
+            <div class="section-box" id="previewSection"
+                style="display:none; background-color:#f8fafc; border:1px solid #cbd5e1;">
+                <div class="section-title" style="border-left-color: #10b981;">✅ 데이터 로드 성공</div>
+
+                <div
+                    style="margin-bottom:10px; padding: 10px; background: #f0fdf4; border-radius: 6px; border: 1px solid #bbf7d0;">
+                    <span id="previewSummary"
+                        style="font-size:1.1rem; font-weight:bold; color:#15803d; margin-right: 10px;"></span>
+                </div>
+
+                <div style="font-size:0.85rem; color:#64748b; margin-bottom:5px;">전체 문항 리스트 (스크롤하여 확인):</div>
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 4px;">
+                    <table style="width:100%; font-size:0.85rem; background:white; border-collapse: collapse;">
+                        <thead style="position: sticky; top: 0; background: #f1f5f9; z-index: 1;">
+                            <tr>
+                                <th style="padding:8px; border-bottom:2px solid #cbd5e1; width:50px;">번호</th>
+                                <th style="padding:8px; border-bottom:2px solid #cbd5e1;">문항유형</th>
+                                <th style="padding:8px; border-bottom:2px solid #cbd5e1;">난이도</th>
+                                <th style="padding:8px; border-bottom:2px solid #cbd5e1;">배점</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 교사 관리 섹션 -->
+            <div class="section-box" id="teacherSection" style="display:none;">
+                <div class="section-title">👥 STEP 2-1: 분할점수 산출 단계 설정</div>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="scoreMode" value="5" checked onchange="changeScoreMode()">
+                        <strong>5단계 분할점수 (A/B ~ E/미도달)</strong> <span
+                            style="font-size:0.8rem; color:#64748b;">(확장)</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="scoreMode" value="4" onchange="changeScoreMode()">
+                        <strong>4단계 분할점수 (A/B ~ D/E)</strong> <span style="font-size:0.8rem; color:#64748b;">(일반)</span>
+                    </label>
+                </div>
+                <p style="font-size:0.8rem; color:#dc2626; margin-top:-10px; margin-bottom:20px;">
+                    ※ 경고: 설정 변경 시 입력된 모든 교사 데이터가 초기화됩니다.
+                </p>
+
+                <div class="section-title">👥 STEP 2-2: 교사 등록 및 선택</div>
+                <div class="teacher-control">
+                    <input type="text" id="newTeacherName" placeholder="교사명 입력 (예: 김교사)"
+                        onkeypress="if(event.key==='Enter') addTeacher()">
+                    <button onclick="addTeacher()">+ 추가</button>
+                    <div style="margin-left: 20px; font-size: 0.95rem;">
+                        등록된 교사: <span id="teacherListBadge" class="badge"
+                            style="background:#dbeafe; color:#1e40af;">0명</span>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-top:20px; padding-top:20px; border-top:1px dashed #cbd5e1; display:flex; align-items:center; gap:10px;">
+                    <label for="currentTeacherSelect" style="font-weight:bold;">✍️ 입력할 교사 선택: </label>
+                    <select id="currentTeacherSelect" onchange="loadTeacherData()"
+                        style="padding:8px; border-radius:4px; border:1px solid #cbd5e1; min-width: 200px;">
+                        <option value="">교사를 선택하세요</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 점수 입력 테이블 -->
+            <div class="section-box" id="inputTableSection" style="display:none;">
+                <div class="section-title">
+                    📝 STEP 3: 정답률(%) 입력
+                    <span id="currentTeacherLabel" class="current-teacher"></span>
+                </div>
+                <p style="font-size:0.9rem; color:#475569; margin-bottom:10px;">
+                    * 각 문항 범주별로 예상되는 정답률(판정값)을 입력하세요. (0 ~ 100 사이 정수, E단계 제외 시 5단위)
+                </p>
+                <!-- 라운드 탭 컨테이너 -->
+                <div id="roundTabContainer" class="round-tabs"></div>
+                <div style="overflow-x: auto;">
+                    <table id="inputTable">
+                        <thead id="inputThead">
+                            <!-- 동적 생성 -->
+                        </thead>
+                        <tbody id="inputTbody">
+                            <!-- 동적 생성 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="validationErrorMsg"
+                    style="color:#dc2626; font-size:0.9rem; margin-top:10px; font-weight:bold; display:none;">
+                    ※ 제약 조건 미충족: 적색으로 표시된 항목을 확인하세요.
+                </div>
+                <div style="text-align: right; margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;">
+                    <button onclick="saveCurrentTeacherData()"
+                        style="padding: 12px 24px; font-size: 1.1rem; background: #64748b; color: white; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(100, 116, 139, 0.3);">
+                        💾 임시 저장
+                    </button>
+                    <button onclick="finalizeCurrentRound()"
+                        style="padding: 12px 24px; font-size: 1.1rem; background: #22c55e; color: white; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.3);">
+                        ✅ 마감하기
+                    </button>
+                    <button onclick="openCancelFinalizePopup()"
+                        style="padding: 12px 24px; font-size: 1.1rem; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);">
+                        🔓 입력마감 취소
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 교사별 입력정보 조회 탭 -->
+        <div id="tab-teacherView" class="content">
+            <div class="section-box">
+                <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>📋 교사별 환산 점수 현황</span>
+                    <select id="viewRoundSelect" onchange="updateTeacherStatusTable()"
+                        style="font-size:0.9rem; padding:4px; border:1px solid #cbd5e1; border-radius:4px;">
+                        <!-- 동적 생성 -->
+                    </select>
+                </div>
+                <p style="margin-bottom:15px; color:#64748b;">각 교사가 입력한 예상 정답률을 바탕으로 계산된 분할점수(Cut Score)입니다.</p>
+                <div style="overflow-x: auto;">
+                    <table id="teacherStatusTable">
+                        <thead id="teacherStatusThead">
+                            <!-- 동적 생성 -->
+                        </thead>
+                        <tbody id="teacherStatusTbody">
+                            <tr>
+                                <td colspan="6">데이터가 없습니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 문항범주별 조회 탭 -->
+        <div id="tab-categoryView" class="content">
+            <div class="section-box">
+                <div class="section-title">📊 문항 범주별 상세 통계</div>
+                <p style="margin-bottom:15px; color:#64748b;">업로드된 문항정보표의 유형/난이도별 문항 수 및 배점 통계입니다.</p>
+                <div style="overflow-x: auto;">
+                    <table id="categoryStatsTable">
+                        <thead>
+                            <tr>
+                                <th>문항유형</th>
+                                <th>난이도</th>
+                                <th>문항수</th>
+                                <th>배점 합계</th>
+                                <th>평균 배점</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoryStatsTbody">
+                            <tr>
+                                <td colspan="5">데이터가 없습니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 예상추정분할점수 조회 탭 -->
+        <div id="tab-finalView" class="content">
+            <div class="section-box">
+                <div class="section-title">🏆 최종 예상 추정분할점수</div>
+                <p style="margin-bottom:20px; color:#64748b;">모든 교사의 입력값을 평균하여 산출된 최종 결과입니다.</p>
+
+                <div class="result-grid" id="finalResultGrid">
+                    <!-- 동적 생성 -->
+                </div>
+
+                <div
+                    style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <h4 style="margin-top:0;">💡 참고사항</h4>
+                    <ul style="color:#475569; padding-left:20px; line-height:1.6;">
+                        <li>이 점수는 교사들의 예상을 바탕으로 산출된 <strong>추정치</strong>입니다.</li>
+                        <li>참여 교사 수: <strong id="participatedTeacherCount">0</strong>명</li>
+                    </ul>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="openApprovalPopup()"
+                            style="padding: 14px 32px; font-size: 1.1rem; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); font-weight: bold;">
+                            📝 승인 요청
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 승인 요청 팝업 모달 -->
+    <div id="approvalModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+        <div
+            style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #1e293b; font-size: 1.5rem;">📊 지필평가 추정분할점수 산출</h2>
+                <span style="color: #64748b; font-size: 0.9rem; margin-left: 10px;">v1.0</span>
+                <button onclick="closeApprovalPopup()"
+                    style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">✕</button>
+            </div>
+
+
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #1e293b;">예상정답률 선택:</label>
+                <select id="roundSelectForApproval"
+                    style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem;">
+                    <!-- 동적 생성 -->
+                </select>
+            </div>
+
+            <div
+                style="background: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; margin-bottom: 20px;">
+                <p style="margin: 0; color: #92400e; font-size: 0.95rem;">
+                    ⚠️ 나이스에서 선택 후 상신함
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeApprovalPopup()"
+                    style="padding: 10px 20px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 입력마감 취소 팝업 모달 -->
+    <div id="cancelFinalizeModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+        <div
+            style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #1e293b; font-size: 1.5rem;">🔓 입력마감 취소</h2>
+                <button onclick="closeCancelFinalizePopup()"
+                    style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">✕</button>
+            </div>
+
+            <div
+                style="background: #fef2f2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444; margin-bottom: 20px;">
+                <p style="margin: 0; color: #991b1b; font-size: 0.95rem;">
+                    ⚠️ 경고: 마감을 취소하면 해당 라운드를 다시 수정할 수 있습니다.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #1e293b;">취소 사유 선택
+                    (필수):</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label
+                        style="display: flex; align-items: center; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer;">
+                        <input type="radio" name="cancelReason" value="문항 오류로 인한 만점 변동" style="margin-right: 10px;">
+                        <span>문항 오류로 인한 만점 변동</span>
+                    </label>
+                    <label
+                        style="display: flex; align-items: center; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer;">
+                        <input type="radio" name="cancelReason" value="전면 재시험" style="margin-right: 10px;">
+                        <span>전면 재시험</span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeCancelFinalizePopup()"
+                    style="padding: 10px 20px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+                    취소
+                </button>
+                <button onclick="confirmCancelFinalize()"
+                    style="padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: bold;">
+                    확인
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let rawData = [];        // 엑셀 원본 데이터 (저장용)
+        let excelData = [];      // 엑셀 파싱 데이터
+        let categories = [];     // 문항 범주 (유형+난이도)
+        let teachers = [];       // 교사 목록 {name: '이름', rounds: [ [inputs_round1], [inputs_round2] ... ] }
+        let currentRound = 0;    // 현재 라운드 (0-based)
+
+        // 분할점수 모드 설정 (기본 5: A/B ~ E/미도달)
+        let currentScoreMode = 5;
+
+        const SCORE_CONFIG = {
+            4: {
+                headers: ['A/B (%)', 'B/C (%)', 'C/D (%)', 'D/E (%)'],
+                keys: ['ab', 'bc', 'cd', 'de'],
+                descriptions: ['A/B 경계', 'B/C 경계', 'C/D 경계', 'D/E 경계']
+            },
+            5: {
+                headers: ['A/B (%)', 'B/C (%)', 'C/D (%)', 'D/E (%)', 'E/미도달 (%)'],
+                keys: ['ab', 'bc', 'cd', 'de', 'ef'],
+                descriptions: ['A/B 경계', 'B/C 경계', 'C/D 경계', 'D/E 경계', 'E/미도달 경계']
+            }
+        };
+
+        // 초기화
+        window.onload = function () {
+            switchTab('input');
+        };
+
+        // 탭 전환
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`button[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            document.querySelector(`#tab-${tabId}`).classList.add('active');
+
+            if (tabId === 'teacherView') updateTeacherStatusTable();
+            if (tabId === 'categoryView') updateCategoryStatsTable();
+            if (tabId === 'finalView') updateFinalResult();
+        }
+
+        // 모드 변경 함수
+        function changeScoreMode() {
+            const radios = document.getElementsByName('scoreMode');
+            let selected;
+            for (const r of radios) { if (r.checked) selected = parseInt(r.value); }
+
+            if (selected === currentScoreMode) return;
+
+            if (teachers.length > 0) {
+                if (!confirm("설정을 변경하면 등록된 모든 교사 데이터가 초기화됩니다. 계속하시겠습니까?")) {
+                    // 라디오 버튼 원복
+                    for (const r of radios) { if (parseInt(r.value) === currentScoreMode) r.checked = true; }
+                    return;
+                }
+                // 데이터 초기화
+                teachers = [];
+                updateTeacherUI();
+                document.getElementById('inputTableSection').style.display = 'none';
+                document.getElementById('newTeacherName').value = '';
+            }
+
+            currentScoreMode = selected;
+            // 테이블 헤더 등 UI 재구성 필요 시 여기서 처리 혹은 render 시 처리
+        }
+
+        // 엑셀 파일 업로드 (나이스 양식 대응)
+        // 헬퍼 함수: 통계 계산
+        const getMean = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+        const getSD = (arr) => {
+            if (arr.length <= 1) return 0;
+            const mean = getMean(arr);
+            const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / (arr.length - 1);
+            return Math.sqrt(variance);
+        };
+        const getMin = (arr) => arr.length ? Math.min(...arr) : 0;
+        const getMax = (arr) => arr.length ? Math.max(...arr) : 0;
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                if (rawData.length < 1) {
+                    alert("데이터가 없는 엑셀 파일입니다.");
+                    return;
+                }
+
+                // 1. 헤더 행 찾기
+                let headerRowIdx = -1;
+                let scoreIdx = -1;
+
+                for (let i = 0; i < Math.min(rawData.length, 30); i++) {
+                    const row = rawData[i];
+                    if (!row || row.length === 0) continue;
+                    const rowStr = row.map(c => String(c).replace(/\s/g, '')).join(' ');
+                    if (rowStr.includes('배점') && rowStr.includes('문항번호')) {
+                        headerRowIdx = i;
+                        scoreIdx = row.findIndex(c => String(c).trim() === '배점');
+                        break;
+                    }
+                }
+
+                if (headerRowIdx === -1 || scoreIdx === -1) {
+                    alert("양식을 인식할 수 없습니다. '문항번호'와 '배점'이 포함된 헤더를 찾을 수 없습니다.");
+                    return;
+                }
+
+                // 2. 난이도 인덱스 찾기
+                let hardIdx = -1, midIdx = -1, easyIdx = -1;
+                for (let r = headerRowIdx; r <= headerRowIdx + 1; r++) {
+                    const row = rawData[r];
+                    if (!row) continue;
+                    row.forEach((cell, idx) => {
+                        const val = String(cell).trim().replace(/\s/g, '');
+                        if (val === '어려움') hardIdx = idx;
+                        else if (val === '보통') midIdx = idx;
+                        else if (val === '쉬움') easyIdx = idx;
+                    });
+                }
+
+                if (hardIdx === -1) {
+                    alert("난이도 구분(어려움/보통/쉬움) 열을 찾을 수 없습니다.");
+                    return;
+                }
+
+                // 3. 데이터 파싱
+                excelData = [];
+                let currentType = '';
+                const startRow = headerRowIdx + 2;
+
+                for (let i = startRow; i < rawData.length; i++) {
+                    const row = rawData[i];
+                    if (!row) continue;
+
+                    const fullText = row.map(c => String(c)).join('');
+                    if (fullText.includes('선택형 문항') || fullText.includes('선택형문항')) {
+                        currentType = '선택형'; continue;
+                    }
+                    if (fullText.includes('서답형 문항') || fullText.includes('서답형문항')) {
+                        currentType = '서답형'; continue;
+                    }
+
+                    const scoreVal = row[scoreIdx];
+                    if (scoreVal === undefined || scoreVal === null || scoreVal === '' || isNaN(scoreVal)) continue;
+
+                    let difficulty = '';
+                    const hardVal = String(row[hardIdx] || '');
+                    const midVal = String(row[midIdx] || '');
+                    const easyVal = String(row[easyIdx] || '');
+
+                    if (hardVal.includes('O') || hardVal.includes('○')) difficulty = '어려움';
+                    else if (midVal.includes('O') || midVal.includes('○')) difficulty = '보통';
+                    else if (easyVal.includes('O') || easyVal.includes('○')) difficulty = '쉬움';
+                    else continue;
+
+                    excelData.push({
+                        type: currentType || '선택형',
+                        difficulty: difficulty,
+                        score: parseFloat(scoreVal)
+                    });
+                }
+
+                if (excelData.length === 0) {
+                    alert("문항 데이터를 인식하지 못했습니다.");
+                    return;
+                }
+
+                processCategories();
+                document.getElementById('teacherSection').style.display = 'block';
+                document.getElementById('uploadAlert').style.display = 'none';
+                renderPreview(excelData);
+                event.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderPreview(data) {
+            const previewSection = document.getElementById('previewSection');
+            const summary = document.getElementById('previewSummary');
+
+            previewSection.style.display = 'block';
+            const selCount = data.filter(d => d.type === '선택형').length;
+            const subCount = data.filter(d => d.type === '서답형').length;
+
+            summary.innerHTML = `총 ${data.length}문항 로드 완료 <span style="font-size:0.9rem; color:#334155; font-weight:normal;">(선택형: <b>${selCount}</b> / 서답형: <b>${subCount}</b>)</span>`;
+
+            // 미리보기는 원본 데이터 순서대로 (엑셀 문항 번호 순) 보여주거나, 혹은 여기서도 정렬할 수 있으나
+            // 사용자 요청은 "입력란"의 순서(선택->서답)가 중요해 보임.
+            // 일단 미리보기는 문항 번호 순서(엑셀 원본 순)가 자연스러우므로 그대로 둡니다.
+            const tbody = document.getElementById('previewTbody');
+            tbody.innerHTML = data.map((item, index) => `
+                <tr style="border-bottom: 1px solid #f1f5f9; background: ${item.type === '서답형' ? '#fff7ed' : 'white'};">
+                    <td style="padding:6px; text-align:center; color:#64748b;">${index + 1}</td>
+                    <td style="padding:6px; text-align:center; font-weight:${item.type === '서답형' ? 'bold' : 'normal'}; color:${item.type === '서답형' ? '#d97706' : 'inherit'}">${item.type}</td>
+                    <td style="padding:6px; text-align:center;">${item.difficulty}</td>
+                    <td style="padding:6px; text-align:center;">${item.score}</td>
+                </tr>
+            `).join('');
+        }
+
+        function processCategories() {
+            const catMap = new Map();
+            excelData.forEach(item => {
+                const key = `${item.type}|${item.difficulty}`;
+                if (!catMap.has(key)) {
+                    catMap.set(key, {
+                        type: item.type, difficulty: item.difficulty,
+                        count: 0, totalScore: 0
+                    });
+                }
+                const cat = catMap.get(key);
+                cat.count++;
+                cat.totalScore += item.score;
+            });
+
+            categories = Array.from(catMap.values());
+
+            // 정렬: 선택형이 서답형보다 먼저 오도록
+            // 난이도 순서: 쉬움 -> 보통 -> 어려움
+            const diffOrder = { '쉬움': 1, '보통': 2, '어려움': 3 };
+
+            categories.sort((a, b) => {
+                // 1. 유형 정렬: 선택형(우선) < 서답형
+                if (a.type !== b.type) {
+                    if (a.type === '선택형') return -1;
+                    if (b.type === '선택형') return 1;
+                    return a.type.localeCompare(b.type);
+                }
+                // 2. 난이도 정렬
+                const da = diffOrder[a.difficulty] || 99;
+                const db = diffOrder[b.difficulty] || 99;
+                return da - db;
+            });
+        }
+
+        function addTeacher() {
+            const name = document.getElementById('newTeacherName').value.trim();
+            if (!name) { alert("이름을 입력하세요."); return; }
+            if (teachers.some(t => t.name === name)) { alert("이미 있습니다."); return; }
+
+            // 교사별 데이터: categories 길이만큼 배열 생성
+            const inputCount = currentScoreMode;
+
+            teachers.push({
+                name: name,
+                rounds: [categories.map(() => Array(inputCount).fill(null))], // rounds[0] 초기화
+                completedRounds: [] // 마감된 라운드 인덱스 목록
+            });
+
+            document.getElementById('newTeacherName').value = '';
+            updateTeacherUI();
+            alert(`'${name}' 교사가 등록되었습니다.`);
+        }
+
+        function updateTeacherUI() {
+            document.getElementById('teacherListBadge').textContent = `${teachers.length}명`;
+            const select = document.getElementById('currentTeacherSelect');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">교사를 선택하세요</option>';
+            teachers.forEach((t, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = t.name;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+            // 라운드 탭 갱신
+            if (typeof renderRoundTabs === 'function') renderRoundTabs();
+        }
+
+        function loadTeacherData() {
+            const idx = document.getElementById('currentTeacherSelect').value;
+            if (idx === "") {
+                document.getElementById('inputTableSection').style.display = 'none';
+                return;
+            }
+            document.getElementById('inputTableSection').style.display = 'block';
+            document.getElementById('currentTeacherLabel').textContent = `- ${teachers[idx].name} 선생님`;
+            renderInputTable(teachers[idx]);
+        }
+
+        function renderInputTable(teacher) {
+            const thead = document.getElementById('inputThead');
+            const tbody = document.getElementById('inputTbody');
+            const config = SCORE_CONFIG[currentScoreMode];
+
+            // 헤더 생성
+            let headerHTML = `<tr>
+                <th>문항유형</th><th>난이도</th><th>문항수</th><th>배점합(가중치)</th>`;
+            config.headers.forEach(h => { headerHTML += `<th>${h}</th>`; });
+            headerHTML += `</tr>`;
+            thead.innerHTML = headerHTML;
+
+            // 바디 생성
+            tbody.innerHTML = '';
+            categories.forEach((cat, catIdx) => {
+                const tr = document.createElement('tr');
+                let html = `
+                    <td>${cat.type}</td>
+                    <td>${cat.difficulty}</td>
+                    <td>${cat.count}</td>
+                    <td>${cat.totalScore.toFixed(1)}</td>
+                `;
+
+                // 입력 필드 생성
+                if (!teacher.rounds[currentRound]) {
+                    const inputCount = config.keys.length;
+                    teacher.rounds[currentRound] = categories.map(() => Array(inputCount).fill(null));
+                }
+                const currentInputs = teacher.rounds[currentRound];
+                const values = currentInputs[catIdx] || Array(config.keys.length).fill(null);
+
+                for (let i = 0; i < config.keys.length; i++) {
+                    const val = values[i] !== null ? values[i] : '';
+                    let inputHtml = '';
+
+                    // 마감된 라운드 체크
+                    const isCompleted = teacher.completedRounds && teacher.completedRounds.includes(currentRound);
+                    const disabledAttr = isCompleted ? 'disabled' : '';
+
+                    // 5단계 모드의 마지막 컬럼(idx 4, E/미도달)은 1% 단위 입력 (20% 이상)
+                    if (currentScoreMode === 5 && i === 4) {
+                        inputHtml = `<input type="number" min="20" max="100" step="1" 
+                                    class="inp-rate" data-cat="${catIdx}" data-idx="${i}" 
+                                    value="${val}" oninput="validateInputs()" ${disabledAttr}>`;
+                    } else {
+                        // 그 외 모든 컬럼은 5% 단위 선택 (Select Box)
+                        inputHtml = `<select class="inp-rate" data-cat="${catIdx}" data-idx="${i}" onchange="validateInputs()" ${disabledAttr}>
+                                        <option value="">선택</option>`;
+                        for (let opt = 0; opt <= 100; opt += 5) {
+                            const selected = val !== '' && parseInt(val) === opt ? 'selected' : '';
+                            inputHtml += `<option value="${opt}" ${selected}>${opt}</option>`;
+                        }
+                        inputHtml += `</select>`;
+                    }
+
+                    html += `<td>${inputHtml}</td>`;
+                }
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
+            // 렌더링 직후 유효성 검사 한 번 실행 (저장된 값이 있을 수 있으므로)
+            validateInputs();
+        }
+
+        // 유효성 검사 함수
+        function validateInputs() {
+            const inputs = document.querySelectorAll('.inp-rate');
+            let isValid = true;
+            let errorMsg = document.getElementById('validationErrorMsg');
+
+            // 1. 스타일 초기화
+            inputs.forEach(inp => inp.classList.remove('invalid-input'));
+
+            // 2. 개별 입력값 유효성 (5% 단위 등)
+            // 4단계 모드일 때 마지막 컬럼 (D/E): idx 3
+            // 5단계 모드일 때 마지막 컬럼 (E/미도달): idx 4
+            const lastColIdx = currentScoreMode - 1;
+
+            inputs.forEach(inp => {
+                const valStr = inp.value;
+                const colIdx = parseInt(inp.dataset.idx);
+                const catIdx = parseInt(inp.dataset.cat);
+
+                // 이전 라운드와 비교 (20% 이상 차이 시 적색 표시)
+                inp.classList.remove('warning-diff');
+                if (currentRound > 0 && valStr !== '') {
+                    const idx = document.getElementById('currentTeacherSelect').value;
+                    if (idx !== "") {
+                        const teacher = teachers[idx];
+                        const prevRoundInputs = teacher.rounds[currentRound - 1];
+                        if (prevRoundInputs && prevRoundInputs[catIdx]) {
+                            const prevVal = prevRoundInputs[catIdx][colIdx];
+                            if (prevVal !== null && Math.abs(parseFloat(valStr) - prevVal) >= 20) {
+                                inp.classList.add('warning-diff');
+                            }
+                        }
+                    }
+                }
+
+                if (valStr === '') return;
+
+                const val = parseFloat(valStr);
+                // colIdx는 위에서 이미 선언됨
+
+                // 2-1. 범위 체크 (0~100)
+                if (val < 0 || val > 100) {
+                    inp.classList.add('invalid-input');
+                    isValid = false;
+                    return;
+                }
+
+                // 2-2. 5단계 모드의 마지막 'E/미도달' (idx 4)인 경우 -> 20% 미만 불가
+                if (currentScoreMode === 5 && colIdx === 4) {
+                    if (val < 20) {
+                        inp.classList.add('invalid-input');
+                        isValid = false;
+                        return;
+                    }
+                    // 1% 단위 허용 (정수 체크)
+                    if (!Number.isInteger(val)) {
+                        inp.classList.add('invalid-input');
+                        isValid = false;
+                        return;
+                    }
+                }
+                // 그 외 모든 입력칸 (4단계 전체, 5단계 앞부분) -> 5% 단위
+                // 단, 기존 로직에서 "마지막 단계"는 1% 허용이었는지 확인 필요.
+                // 요청사항: "5% 단위로만 입력하고 E/미도달만 1%단위 입력이 가능합"
+                // -> 해석: E/미도달(5단계 마지막)만 1% 가능. 나머지는 다 5%. 
+                // -> 4단계 모드의 마지막(D/E)은? "E/미도달"이 아니므로 5%여야 하는가? 
+                //    문맥상 "마지막 컬럼 제외"였으나, 요청이 "E/미도달만 1% 가능"이라고 했으므로 
+                //    나머지(4단계 D/E 포함)는 5%로 제한하는 것이 안전함.
+                //    하지만 기존 룰(마지막 컬럼 제외)과 충돌할 수 있음.
+                //    일단 안전하게: "5단계의 E/미도달"만 1% 허용, 나머지는 모두 5% 단위로 적용.
+                else {
+                    if (val % 5 !== 0) {
+                        inp.classList.add('invalid-input');
+                        isValid = false;
+                    }
+                }
+            });
+
+            // 3. 상위 수준 정답률 >= 하위 수준 정답률 (Row 기준)
+            // 같은 행에서 왼쪽 컬럼 값 >= 오른쪽 컬럼 값
+            const config = SCORE_CONFIG[currentScoreMode];
+            const colCount = config.keys.length;
+
+            categories.forEach((cat, rIdx) => {
+                for (let c = 0; c < colCount - 1; c++) {
+                    const leftInp = document.querySelector(`.inp-rate[data-cat="${rIdx}"][data-idx="${c}"]`);
+                    const rightInp = document.querySelector(`.inp-rate[data-cat="${rIdx}"][data-idx="${c + 1}"]`);
+
+                    if (leftInp && rightInp && leftInp.value !== '' && rightInp.value !== '') {
+                        if (parseFloat(leftInp.value) < parseFloat(rightInp.value)) {
+                            leftInp.classList.add('invalid-input');
+                            rightInp.classList.add('invalid-input');
+                            isValid = false;
+                        }
+                    }
+                }
+            });
+
+            // 4. 쉬운 난이도 정답률 >= 어려운 난이도 정답률 (Column 기준)
+
+            const types = ['선택형', '서답형'];
+            const diffOrder = ['쉬움', '보통', '어려움']; // Easy, Normal, Hard
+
+            for (let c = 0; c < colCount; c++) {
+                types.forEach(type => {
+                    // 해당 유형의 난이도별 행 인덱스 찾기
+                    const catIndices = {};
+                    categories.forEach((cat, idx) => {
+                        if (cat.type === type) catIndices[cat.difficulty] = idx;
+                    });
+
+                    // 쉬움 vs 보통 비교 (쉬움 >= 보통)
+                    if (catIndices['쉬움'] !== undefined && catIndices['보통'] !== undefined) {
+                        compareVertical(catIndices['쉬움'], catIndices['보통'], c);
+                    }
+                    // 보통 vs 어려움 비교 (보통 >= 어려움)
+                    if (catIndices['보통'] !== undefined && catIndices['어려움'] !== undefined) {
+                        compareVertical(catIndices['보통'], catIndices['어려움'], c);
+                    }
+                    // (옵션) 쉬움 vs 어려움 비교
+                    if (catIndices['쉬움'] !== undefined && catIndices['어려움'] !== undefined) {
+                        compareVertical(catIndices['쉬움'], catIndices['어려움'], c);
+                    }
+                });
+            }
+
+            function compareVertical(easyRowIdx, hardRowIdx, colIdx) {
+                const easyInp = document.querySelector(`.inp-rate[data-cat="${easyRowIdx}"][data-idx="${colIdx}"]`);
+                const hardInp = document.querySelector(`.inp-rate[data-cat="${hardRowIdx}"][data-idx="${colIdx}"]`);
+
+                if (easyInp && hardInp && easyInp.value !== '' && hardInp.value !== '') {
+                    if (parseFloat(easyInp.value) < parseFloat(hardInp.value)) {
+                        easyInp.classList.add('invalid-input');
+                        hardInp.classList.add('invalid-input');
+                        isValid = false;
+                    }
+                }
+            }
+
+            // 에러 메시지 표시 로직
+            // 에러 메시지 내용을 동적으로 바꿀 수도 있지만, 일단 통일해서 보여줌
+            if (!isValid) {
+                errorMsg.style.display = 'block';
+                // 구체적인 에러 사유를 UI에 띄워주면 좋음 (여기선 간단히)
+            } else {
+                errorMsg.style.display = 'none';
+            }
+            return isValid;
+        }
+
+        function saveCurrentTeacherData() {
+            // 저장 전 유효성 검사 수행
+            if (!validateInputs()) {
+                alert("입력값 중 제약 조건을 충족하지 못하는 항목이 있습니다.\n(적색으로 표시된 칸을 확인해 주세요)\n\n- 5% 단위 입력 원칙\n- 단, 'E/미도달'은 1% 단위 가능 (최소 20% 이상)\n- 상위 수준 정답률 >= 하위 수준\n- 쉬운 난이도 정답률 >= 어려운 난이도");
+                return;
+            }
+
+            const idx = document.getElementById('currentTeacherSelect').value;
+            if (idx === "") return;
+            const teacher = teachers[idx];
+
+            const inputs = document.querySelectorAll('.inp-rate');
+            let isComplete = true;
+
+            inputs.forEach(inp => {
+                const catIdx = parseInt(inp.dataset.cat);
+                const valIdx = parseInt(inp.dataset.idx);
+                const val = inp.value;
+
+                // 현재 라운드 데이터 업데이트
+                if (!teacher.rounds[currentRound]) {
+                    teacher.rounds[currentRound] = JSON.parse(JSON.stringify(teacher.rounds[0]));
+                }
+                teacher.rounds[currentRound][catIdx][valIdx] = val === '' ? null : parseFloat(val);
+                if (val === '') isComplete = false;
+            });
+
+            if (!isComplete) {
+                alert("모든 문항에 대한 정답률을 입력해야 저장할 수 있습니다.\n(빈 칸 또는 '선택' 상태인 항목이 있습니다)");
+                return;
+            }
+
+            alert(`저장되었습니다. (${currentRound + 1}라운드)`);
+        }
+
+        function finalizeCurrentRound() {
+            // 1. 현재 교사 선택 확인
+            const idx = document.getElementById('currentTeacherSelect').value;
+            if (idx === "") {
+                alert("교사를 먼저 선택해주세요.");
+                return;
+            }
+            const teacher = teachers[idx];
+
+            // 2. 유효성 검사
+            if (!validateInputs()) {
+                alert("입력값 중 제약 조건을 충족하지 못하는 항목이 있습니다.\n마감하기 전에 모든 입력을 완료해주세요.");
+                return;
+            }
+
+            // 3. 데이터 저장 (saveCurrentTeacherData 로직 재사용)
+            const inputs = document.querySelectorAll('.inp-rate');
+            let isComplete = true;
+
+            inputs.forEach(inp => {
+                const catIdx = parseInt(inp.dataset.cat);
+                const valIdx = parseInt(inp.dataset.idx);
+                const val = inp.value;
+
+                if (!teacher.rounds[currentRound]) {
+                    teacher.rounds[currentRound] = JSON.parse(JSON.stringify(teacher.rounds[0]));
+                }
+                teacher.rounds[currentRound][catIdx][valIdx] = val === '' ? null : parseFloat(val);
+                if (val === '') isComplete = false;
+            });
+
+            if (!isComplete) {
+                alert("모든 문항에 대한 정답률을 입력해야 마감할 수 있습니다.");
+                return;
+            }
+
+            // 4. 마감 처리
+            if (!teacher.completedRounds) teacher.completedRounds = [];
+            if (teacher.completedRounds.includes(currentRound)) {
+                alert("이미 마감된 라운드입니다.");
+                return;
+            }
+
+            if (!confirm(`${teacher.name} 선생님의 ${currentRound + 1}라운드를 마감하시겠습니까?\n마감 후에는 수정할 수 없습니다.`)) {
+                return;
+            }
+
+            teacher.completedRounds.push(currentRound);
+            alert(`${teacher.name} 선생님의 ${currentRound + 1}라운드가 마감되었습니다.`);
+
+            // 5. 모든 교사가 현재 라운드를 마감했는지 확인
+            const allCompleted = teachers.every(t => {
+                if (!t.completedRounds) t.completedRounds = [];
+                return t.completedRounds.includes(currentRound);
+            });
+
+            if (allCompleted) {
+                if (confirm(`모든 교사가 ${currentRound + 1}라운드를 마감했습니다.\n다음 라운드를 시작하시겠습니까?`)) {
+                    // 다음 라운드 자동 생성
+                    const useCopy = confirm("이전 라운드 데이터를 복사하여 시작하시겠습니까?\n[확인]: 복사함 / [취소]: 빈 값으로 시작");
+
+                    teachers.forEach(t => {
+                        const inputCount = currentScoreMode;
+                        let newInputs;
+
+                        if (useCopy) {
+                            const prevInputs = t.rounds[t.rounds.length - 1];
+                            newInputs = JSON.parse(JSON.stringify(prevInputs));
+                        } else {
+                            newInputs = categories.map(() => Array(inputCount).fill(null));
+                        }
+                        t.rounds.push(newInputs);
+                    });
+
+                    switchRound(teachers[0].rounds.length - 1);
+                }
+            }
+
+            // 6. UI 업데이트 (입력 필드 비활성화)
+            renderInputTable();
+            renderRoundTabs();
+        }
+
+        function updateTeacherStatusTable() {
+            // 1. 라운드 선택 select 업데이트
+            const select = document.getElementById('viewRoundSelect');
+            let targetRound = currentRound;
+
+            if (select) {
+                const maxRound = (teachers.length > 0 && teachers[0].rounds) ? teachers[0].rounds.length : 1;
+                const savedVal = select.value;
+                select.innerHTML = '';
+
+                // 마감된 라운드만 옵션에 추가
+                for (let i = 0; i < maxRound; i++) {
+                    const allCompleted = teachers.length > 0 && teachers.every(t => {
+                        return t.completedRounds && t.completedRounds.includes(i);
+                    });
+
+                    if (allCompleted) {
+                        const opt = document.createElement('option');
+                        opt.value = i;
+                        opt.text = (i + 1) + "라운드";
+                        select.appendChild(opt);
+                    }
+                }
+
+                // 값 복원 또는 첫 번째 마감된 라운드로 설정
+                if (savedVal !== '' && select.querySelector(`option[value="${savedVal}"]`)) {
+                    select.value = savedVal;
+                } else if (select.options.length > 0) {
+                    select.value = select.options[0].value;
+                }
+
+                // 사용자가 선택한 라운드
+                if (select.value !== "") {
+                    targetRound = parseInt(select.value);
+                }
+            }
+
+            const thead = document.getElementById('teacherStatusThead');
+            const tbody = document.getElementById('teacherStatusTbody');
+            const config = SCORE_CONFIG[currentScoreMode];
+
+            // 헤더 생성 (2단 구조)
+            let headRows = `
+                <tr>
+                    <th rowspan="2">문항유형</th>
+                    <th rowspan="2">난이도</th>
+                    <th rowspan="2">교사</th>
+                    <th rowspan="2">배점합(문항수)</th>
+                    <th colspan="${config.keys.length}">성취수준</th>
+                </tr>
+                <tr>`;
+
+            const labels = currentScoreMode === 5
+                ? ['A', 'B', 'C', 'D', 'E']
+                : ['A', 'B', 'C', 'D'];
+
+            if (config.keys.length === labels.length) {
+                labels.forEach(l => headRows += `<th>${l}</th>`);
+            } else {
+                config.headers.forEach(h => headRows += `<th>${h.split(' ')[0]}</th>`);
+            }
+            headRows += `</tr>`;
+            thead.innerHTML = headRows;
+
+            tbody.innerHTML = '';
+
+            if (categories.length === 0 || teachers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${4 + config.keys.length}" style="text-align:center; padding: 20px;">데이터가 없습니다.</td></tr>`;
+                return;
+            }
+
+            categories.forEach((cat, catIdx) => {
+                teachers.forEach(teacher => {
+                    const tr = document.createElement('tr');
+
+                    // 입력 상태 확인
+                    if (!teacher.rounds) teacher.rounds = [];
+                    const inputsForTargetRound = teacher.rounds[targetRound];
+
+                    const inputsForCategory = (inputsForTargetRound && inputsForTargetRound[catIdx]) || Array(config.keys.length).fill(null);
+
+                    const isAllComplete = inputsForTargetRound && inputsForTargetRound.every(row => row && row.every(v => v !== null && v !== ''));
+                    const statusPrefix = isAllComplete ? '[마감]' : '[진행]';
+
+                    let rowHTML = `
+                        <td>${cat.type}</td>
+                        <td>${cat.difficulty}</td>
+                        <td style="text-align:left; padding-left:10px;">${statusPrefix}${teacher.name}</td>
+                        <td>${cat.totalScore.toFixed(0)}(${cat.count})</td>
+                    `;
+
+                    inputsForCategory.forEach(val => {
+                        rowHTML += `<td>${val !== null ? val : ''}</td>`;
+                    });
+
+                    tr.innerHTML = rowHTML;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+
+        function updateCategoryStatsTable() {
+            const tbody = document.getElementById('categoryStatsTbody');
+            tbody.innerHTML = '';
+            if (categories.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">데이터가 없습니다.</td></tr>'; return;
+            }
+            categories.forEach(cat => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${cat.type}</td><td>${cat.difficulty}</td><td>${cat.count}</td><td>${cat.totalScore.toFixed(1)}</td><td>${(cat.totalScore / cat.count).toFixed(2)}</td>`;
+                tbody.appendChild(tr);
+            });
+            const tCount = categories.reduce((s, c) => s + c.count, 0);
+            const tScore = categories.reduce((s, c) => s + c.totalScore, 0);
+            tbody.innerHTML += `<tr class='total-row'><td colspan='2'>합계</td><td>${tCount}</td><td>${tScore.toFixed(1)}</td><td>-</td></tr>`;
+        }
+
+        function updateFinalResult() {
+            const config = SCORE_CONFIG[currentScoreMode];
+            const grid = document.getElementById('finalResultGrid');
+            grid.innerHTML = '';
+
+            let validCount = 0;
+            // 각 분할점수별 합계
+            const sums = Array(config.keys.length).fill(0);
+
+            teachers.forEach(t => {
+                const currentInputs = t.rounds[currentRound];
+                // 유효성 체크
+                if (!currentInputs) return;
+                const isComplete = currentInputs.every(row => row && row.every(v => v !== null));
+
+                if (isComplete) {
+                    const scores = calculateCutScores(t);
+                    scores.forEach((s, i) => sums[i] += s);
+                    validCount++;
+                }
+            });
+
+            document.getElementById('participatedTeacherCount').innerText = `${validCount} (Round ${currentRound + 1})`;
+
+            config.headers.forEach((h, i) => {
+                const avg = validCount > 0 ? (sums[i] / validCount).toFixed(2) : '-';
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `
+                    <h3>${h.split(' ')[0]} 분할점수</h3>
+                    <div class="score">${avg}</div>
+                    <div class="desc">${config.descriptions[i]}</div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        // 컷스코어 계산 함수 (동적)
+        function calculateCutScores(teacher) {
+            const config = SCORE_CONFIG[currentScoreMode];
+            const results = Array(config.keys.length).fill(0);
+            const currentInputs = teacher.rounds[currentRound] || [];
+
+            currentInputs.forEach((rowValues, catIdx) => {
+                const cat = categories[catIdx];
+                rowValues.forEach((val, valIdx) => {
+                    // 비율(%) * 배점총합 / 100
+                    if (val !== null) {
+                        results[valIdx] += cat.totalScore * (val / 100);
+                    }
+                });
+            });
+
+            return results;
+        }
+
+        // ==========================================
+        //  3. 라운드(Round) 관리 & 저장/로드
+        // ==========================================
+        function renderRoundTabs() {
+            const maxRound = (teachers.length > 0 && teachers[0].rounds) ? teachers[0].rounds.length : 1;
+            const tabContainer = document.getElementById('roundTabContainer');
+            if (!tabContainer) return;
+
+            let html = '';
+            for (let i = 0; i < maxRound; i++) {
+                const activeClass = (i === currentRound) ? 'active' : '';
+
+                // 모든 교사가 이 라운드를 마감했는지 확인
+                const allCompleted = teachers.length > 0 && teachers.every(t => {
+                    return t.completedRounds && t.completedRounds.includes(i);
+                });
+
+                const completedMark = allCompleted ? ' ✓' : '';
+                html += `<button class="round-tab ${activeClass}" onclick="switchRound(${i})">${i + 1}라운드${completedMark}</button>`;
+
+                // 첫 번째 라운드가 아니면 삭제 버튼 추가
+                if (i > 0) {
+                    html += `<button class="delete-round-btn" onclick="deleteRound(${i})" title="라운드 삭제">×</button>`;
+                }
+            }
+            html += `<button class="round-tab add-btn" onclick="addNewRound()">+ 추가</button>`;
+
+            tabContainer.innerHTML = html;
+        }
+
+        function switchRound(roundIdx) {
+            currentRound = roundIdx;
+            renderRoundTabs();
+            // 현재 선택된 교사가 있다면 테이블 다시 렌더링
+            loadTeacherData();
+            // 결과 테이블 갱신
+            updateTeacherStatusTable();
+            updateFinalResult();
+            updateCategoryStatsTable();
+
+            // 라벨 갱신
+            const idx = document.getElementById('currentTeacherSelect').value;
+            if (idx !== "") {
+                document.getElementById('currentTeacherLabel').textContent = `- ${teachers[idx].name} 선생님 (${currentRound + 1}라운드)`;
+            }
+        }
+
+        function addNewRound() {
+            if (teachers.length === 0) {
+                alert("교사를 먼저 등록해주세요.");
+                return;
+            }
+            if (!confirm("새로운 평가 라운드를 추가하시겠습니까?\n(기존 라운드는 보존됩니다)")) return;
+
+            const useCopy = confirm("이전 라운드 데이터를 복사하여 시작하시겠습니까?\n[확인]: 복사함 / [취소]: 빈 값으로 시작");
+
+            teachers.forEach(t => {
+                const inputCount = currentScoreMode;
+                let newInputs;
+
+                if (useCopy) {
+                    const prevInputs = t.rounds[t.rounds.length - 1]; // 이전 라운드 값 복사
+                    newInputs = JSON.parse(JSON.stringify(prevInputs));
+                } else {
+                    newInputs = categories.map(() => Array(inputCount).fill(null));
+                }
+                t.rounds.push(newInputs);
+            });
+
+            switchRound(teachers[0].rounds.length - 1);
+        }
+
+
+        function updateCategoryStatsTable() {
+            const table = document.getElementById('categoryStatsTable');
+            const thead = table.querySelector('thead');
+            const tbody = document.getElementById('categoryStatsTbody');
+            tbody.innerHTML = '';
+
+            const config = SCORE_CONFIG[currentScoreMode];
+
+            let headHtml = `
+                <tr>
+                    <th rowspan="2">문항유형</th>
+                    <th rowspan="2">난이도</th>`;
+
+            const labels = currentScoreMode === 5
+                ? ['A', 'B', 'C', 'D', 'E']
+                : ['A', 'B', 'C', 'D'];
+
+            if (config.keys.length === labels.length) {
+                labels.forEach(l => headHtml += `<th colspan="4">${l}</th>`);
+            } else {
+                config.headers.forEach(h => headHtml += `<th colspan="4">${h.split(' ')[0]}</th>`);
+            }
+            headHtml += `</tr><tr>`;
+
+            config.keys.forEach(() => {
+                headHtml += `
+                    <th>평균</th>
+                    <th>표준편차</th>
+                    <th>최솟값</th>
+                    <th>최댓값</th>`;
+            });
+            headHtml += `</tr>`;
+            thead.innerHTML = headHtml;
+
+            if (categories.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${2 + config.keys.length * 4}">데이터가 없습니다.</td></tr>`;
+                return;
+            }
+
+            categories.forEach((cat, catIdx) => {
+                const tr = document.createElement('tr');
+                let rowHtml = `<td>${cat.type}</td><td>${cat.difficulty}</td>`;
+
+                config.keys.forEach((_, colIdx) => {
+                    const values = [];
+                    teachers.forEach(t => {
+                        if (t.rounds[currentRound] && t.rounds[currentRound][catIdx]) {
+                            const val = t.rounds[currentRound][catIdx][colIdx];
+                            if (val !== null && val !== '') values.push(parseFloat(val));
+                        }
+                    });
+
+                    const mean = values.length ? getMean(values).toFixed(2) : '-';
+                    const sd = values.length ? getSD(values).toFixed(2) : '-'; // 수정: 값 없으면 '-'
+                    const min = values.length ? getMin(values) : '-';
+                    const max = values.length ? getMax(values) : '-';
+
+                    rowHtml += `
+                        <td>${mean}</td>
+                        <td>${sd}</td>
+                        <td>${min}</td>
+                        <td>${max}</td>
+                    `;
+                });
+                tr.innerHTML = rowHtml;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateFinalResult() {
+            const config = SCORE_CONFIG[currentScoreMode];
+            const grid = document.getElementById('finalResultGrid');
+            grid.innerHTML = '';
+
+            const levelScores = Array(config.keys.length).fill(null).map(() => []);
+            let validTeacherCount = 0;
+
+            teachers.forEach(t => {
+                const currentInputs = t.rounds[currentRound];
+                if (!currentInputs) return;
+
+                const isComplete = currentInputs.every(row => row && row.every(v => v !== null && v !== ''));
+                if (isComplete) {
+                    const scores = calculateCutScores(t);
+                    scores.forEach((s, i) => levelScores[i].push(s));
+                    validTeacherCount++;
+                }
+            });
+
+            document.getElementById('participatedTeacherCount').innerText = `${validTeacherCount} (Round ${currentRound + 1})`;
+
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.style.marginTop = '20px';
+            table.className = 'w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400';
+
+            let theadHtml = `<thead><tr><th>구분</th>`;
+
+            const labels = currentScoreMode === 5
+                ? ['A/B', 'B/C', 'C/D', 'D/E', 'E']
+                : ['A/B', 'B/C', 'C/D', 'D/E'];
+
+            config.headers.forEach(h => theadHtml += `<th>${h.split(' ')[0]}</th>`);
+            theadHtml += `</tr></thead><tbody>`;
+
+            const statsRows = [
+                { label: '평균', fn: getMean, fixed: 2 },
+                { label: '표준편차', fn: getSD, fixed: 2 },
+                { label: '최솟값', fn: getMin, fixed: 2 },
+                { label: '최댓값', fn: getMax, fixed: 2 }
+            ];
+
+            statsRows.forEach(stat => {
+                theadHtml += `<tr><td>${stat.label}</td>`;
+                levelScores.forEach(scores => {
+                    const val = scores.length ? stat.fn(scores).toFixed(stat.fixed) : '-';
+                    theadHtml += `<td>${val}</td>`;
+                });
+                theadHtml += `</tr>`;
+            });
+            theadHtml += `</tbody>`;
+            table.innerHTML = theadHtml;
+
+            grid.appendChild(table);
+        }
+
+        function saveProjectData() {
+            if (teachers.length === 0 && excelData.length === 0) {
+                alert("저장할 데이터가 없습니다.");
+                return;
+            }
+
+            const data = {
+                timestamp: new Date().toISOString(),
+                currentScoreMode,
+                currentRound,
+                teachers,
+                excelData,
+                categories,
+                rawData
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            // 파일명: 지필평가 추정분할점수 산출(YYYY-MM-DD_HHMM).json
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const dateTimeStr = `${year}-${month}-${day}_${hours}${minutes}`;
+
+            a.download = `지필평가 추정분할점수 산출(${dateTimeStr}).json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function loadProjectData(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (data.currentScoreMode) currentScoreMode = data.currentScoreMode;
+                    if (data.currentRound !== undefined) currentRound = data.currentRound;
+                    if (data.teachers) teachers = data.teachers;
+                    if (data.excelData) excelData = data.excelData;
+                    if (data.categories) categories = data.categories;
+                    if (data.rawData) rawData = data.rawData;
+
+                    const radio = document.querySelector(`input[name="scoreMode"][value="${currentScoreMode}"]`);
+                    if (radio) radio.checked = true;
+
+                    if (excelData.length > 0) {
+                        document.getElementById('teacherSection').style.display = 'block';
+                        document.getElementById('uploadAlert').style.display = 'none';
+                        renderPreview(excelData);
+                    }
+
+                    updateTeacherUI();
+                    renderRoundTabs();
+                    switchRound(currentRound);
+
+                    alert("데이터를 성공적으로 불러왔습니다.");
+
+                } catch (err) {
+                    alert("파일 형식 오류: " + err.message);
+                }
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // 승인 요청 팝업 관련 함수
+        function openApprovalPopup() {
+            const modal = document.getElementById('approvalModal');
+            const roundSelect = document.getElementById('roundSelectForApproval');
+            const config = SCORE_CONFIG[currentScoreMode];
+
+            // 라운드 옵션 생성
+            roundSelect.innerHTML = '';
+            const maxRound = (teachers.length > 0 && teachers[0].rounds) ? teachers[0].rounds.length : 1;
+
+            for (let i = 0; i < maxRound; i++) {
+                // 마감된 라운드만 선택 가능하도록
+                const allCompleted = teachers.length > 0 && teachers.every(t => {
+                    return t.completedRounds && t.completedRounds.includes(i);
+                });
+
+                if (allCompleted) {
+                    // 해당 라운드의 평균 분할점수 계산
+                    const sums = Array(config.keys.length).fill(0);
+                    let validCount = 0;
+
+                    teachers.forEach(t => {
+                        const roundInputs = t.rounds[i];
+                        if (!roundInputs) return;
+
+                        const isComplete = roundInputs.every(row => row && row.every(v => v !== null && v !== ''));
+                        if (isComplete) {
+                            // 임시로 currentRound를 i로 설정하여 계산
+                            const savedRound = currentRound;
+                            currentRound = i;
+                            const scores = calculateCutScores(t);
+                            currentRound = savedRound;
+
+                            scores.forEach((s, idx) => sums[idx] += s);
+                            validCount++;
+                        }
+                    });
+
+                    // 평균 계산
+                    const avgScores = sums.map(s => validCount > 0 ? (s / validCount).toFixed(2) : '-');
+                    const scoresText = avgScores.join(', ');
+
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.text = `${i + 1}라운드 결과: [${scoresText}]`;
+                    roundSelect.appendChild(option);
+                }
+            }
+
+            // 모달 표시
+            modal.style.display = 'flex';
+        }
+
+        function closeApprovalPopup() {
+            const modal = document.getElementById('approvalModal');
+            modal.style.display = 'none';
+        }
+
+        // 입력마감 취소 관련 함수
+        function openCancelFinalizePopup() {
+            const idx = document.getElementById('currentTeacherSelect').value;
+            if (idx === "") {
+                alert("교사를 먼저 선택해주세요.");
+                return;
+            }
+
+            const teacher = teachers[idx];
+            if (!teacher.completedRounds || !teacher.completedRounds.includes(currentRound)) {
+                alert("현재 라운드는 마감되지 않았습니다.");
+                return;
+            }
+
+            // 라디오 버튼 초기화
+            document.querySelectorAll('input[name="cancelReason"]').forEach(radio => {
+                radio.checked = false;
+            });
+
+            const modal = document.getElementById('cancelFinalizeModal');
+            modal.style.display = 'flex';
+        }
+
+        function closeCancelFinalizePopup() {
+            const modal = document.getElementById('cancelFinalizeModal');
+            modal.style.display = 'none';
+        }
+
+        function confirmCancelFinalize() {
+            const selectedReason = document.querySelector('input[name="cancelReason"]:checked');
+
+            if (!selectedReason) {
+                alert("취소 사유를 선택해주세요.");
+                return;
+            }
+
+            const reason = selectedReason.value;
+
+            if (!confirm(`입력마감을 취소하시겠습니까?\n사유: ${reason}\n\n취소 후에는 해당 라운드를 다시 수정할 수 있습니다.`)) {
+                return;
+            }
+
+            // 모든 교사의 completedRounds에서 현재 라운드 제거
+            teachers.forEach(t => {
+                if (t.completedRounds) {
+                    const index = t.completedRounds.indexOf(currentRound);
+                    if (index > -1) {
+                        t.completedRounds.splice(index, 1);
+                    }
+                }
+            });
+
+            alert(`${currentRound + 1}라운드의 입력마감이 취소되었습니다.\n사유: ${reason}`);
+
+            // UI 업데이트
+            renderInputTable();
+            renderRoundTabs();
+            updateTeacherStatusTable();
+            closeCancelFinalizePopup();
+        }
+
+        // 라운드 삭제 함수
+        function deleteRound(roundIndex) {
+            if (roundIndex === 0) {
+                alert("첫 번째 라운드는 삭제할 수 없습니다.");
+                return;
+            }
+
+            if (!confirm(`${roundIndex + 1}라운드를 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.\n모든 교사의 ${roundIndex + 1}라운드 데이터가 삭제됩니다.`)) {
+                return;
+            }
+
+            // 모든 교사의 해당 라운드 데이터 삭제
+            teachers.forEach(t => {
+                t.rounds.splice(roundIndex, 1);
+
+                // completedRounds 인덱스 조정
+                if (t.completedRounds) {
+                    t.completedRounds = t.completedRounds
+                        .filter(r => r !== roundIndex)
+                        .map(r => r > roundIndex ? r - 1 : r);
+                }
+            });
+
+            // currentRound 조정
+            if (currentRound >= roundIndex) {
+                currentRound = Math.max(0, currentRound - 1);
+            }
+
+            alert(`${roundIndex + 1}라운드가 삭제되었습니다.`);
+
+            // UI 업데이트
+            switchRound(currentRound);
+        }
+
+    </script>
+</body>
+
+</html>

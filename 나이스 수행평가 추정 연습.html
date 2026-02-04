@@ -1,0 +1,494 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수행평가 추정분할점수 산출</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f1f5f9;
+            --border: #cbd5e1;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --dark: #1e293b;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            min-height: 80vh;
+        }
+
+        header {
+            background: var(--dark);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .section-box {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #0f172a;
+            border-left: 4px solid var(--primary);
+            padding-left: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.95rem;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            border: none;
+            transition: 0.2s;
+            color: white;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-dark {
+            background: var(--dark);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .result-card {
+            background: #eff6ff;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #bfdbfe;
+            text-align: center;
+        }
+
+        .score-val {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>📝 수행평가 추정분할점수 산출</h1>
+                <div style="font-size: 0.85rem; opacity: 0.8;">Performance Assessment Ver 1.0</div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-success" onclick="saveData()">💾 저장하기</button>
+                <button class="btn btn-dark" onclick="document.getElementById('fileLoad').click()">📂 불러오기</button>
+                <input type="file" id="fileLoad" style="display:none" onchange="loadData(event)">
+            </div>
+        </header>
+
+        <!-- STEP 1: 수행평가 영역 설정 -->
+        <div class="section-box">
+            <div class="section-title flex-between">
+                <span>📋 STEP 1: 수행평가 영역 설정</span>
+                <button class="btn btn-primary" onclick="addArea()">+ 영역 추가</button>
+            </div>
+            <table id="areaTable">
+                <thead>
+                    <tr>
+                        <th>영역명</th>
+                        <th>배점 (만점)</th>
+                        <th>반영 비율 (%)</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="areaTbody">
+                    <!-- 첫 입력 행 -->
+                    <tr>
+                        <td><input type="text" placeholder="예: 포트폴리오" onchange="updateAreaFromInput(this, 0, 'name')">
+                        </td>
+                        <td><input type="number" placeholder="0" onchange="updateAreaFromInput(this, 0, 'score')">
+                        </td>
+                        <td><input type="number" placeholder="0" onchange="updateAreaFromInput(this, 0, 'ratio')">
+                        </td>
+                        <td><button class="btn btn-danger" onclick="removeArea(0)">삭제</button></td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr style="background:#f8fafc; font-weight:bold;">
+                        <td>합계</td>
+                        <td id="totalRawScore">0</td>
+                        <td id="totalRatio">0 / 100%</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- STEP 2: 등급 비율 입력 -->
+        <div class="section-box">
+            <div class="section-title">📝 STEP 2: 등급 비율 입력</div>
+            <div style="margin-bottom:20px; display:flex; gap:15px; align-items:center;">
+                <label><strong>산출 방식:</strong></label>
+                <select id="calcModeSetup" style="width:200px;" onchange="renderGradeInputSection()">
+                    <option value="total">전체영역</option>
+                    <option value="each">영역별</option>
+                </select>
+            </div>
+            <div id="gradeInputContainer">
+                <!-- 동적 생성 -->
+            </div>
+        </div>
+
+        <!-- STEP 3: 산출 결과 -->
+        <div class="section-box">
+            <div class="section-title">🏆 STEP 3: 최종 수행평가 추정분할점수</div>
+            <div id="finalResultGrid"
+                style="display:grid; grid-template-columns: repeat(5, 1fr); gap:15px; margin-bottom:30px;">
+            </div>
+            <div style="text-align:center;">
+                <button class="btn btn-success" style="padding:15px 40px; font-size:1.1rem;" onclick="exportResult()">📊
+                    산출 결과 파일 저장 (.json)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let areas = [{ name: '', score: 0, ratio: 0 }]; // 기본 1개 영역
+        let gradeData = { mode: 'total', values: {} }; // 등급 데이터
+
+
+        // 영역 관리
+        function addArea() {
+            areas.push({ name: '', score: 0, ratio: 0 });
+            renderAreas();
+            renderGradeInputSection(); // 영역이 추가되면 등급 입력 섹션도 업데이트
+        }
+
+        function removeArea(index) {
+            if (areas.length <= 1) {
+                alert("최소 1개의 영역은 필요합니다.");
+                return;
+            }
+            areas.splice(index, 1);
+            renderAreas();
+            renderGradeInputSection();
+        }
+
+        function updateArea(index, field, value) {
+            if (!areas[index]) return;
+            areas[index][field] = field === 'name' ? value : parseFloat(value) || 0;
+            updateTotals();
+            renderGradeInputSection();
+        }
+
+        // 입력 필드에서 직접 업데이트 (초기 빈 행용)
+        function updateAreaFromInput(inputEl, index, field) {
+            // 해당 인덱스의 영역이 없으면 생성
+            while (areas.length <= index) {
+                areas.push({ name: '', score: 0, ratio: 0 });
+            }
+            areas[index][field] = field === 'name' ? inputEl.value : parseFloat(inputEl.value) || 0;
+            updateTotals();
+            renderGradeInputSection();
+        }
+
+        function renderAreas() {
+            const tbody = document.getElementById('areaTbody');
+            tbody.innerHTML = '';
+            areas.forEach((area, i) => {
+                tbody.innerHTML += `
+                <tr>
+                    <td><input type="text" value="${area.name}" onchange="updateArea(${i}, 'name', this.value)" placeholder="예: 포트폴리오"></td>
+                    <td><input type="number" value="${area.score || ''}" onchange="updateArea(${i}, 'score', this.value)" placeholder="0"></td>
+                    <td><input type="number" value="${area.ratio || ''}" onchange="updateArea(${i}, 'ratio', this.value)" placeholder="0"></td>
+                    <td><button class="btn btn-danger" onclick="removeArea(${i})">삭제</button></td>
+                </tr>
+            `;
+            });
+            updateTotals();
+        }
+
+        // 등급 입력 섹션 렌더링
+        function renderGradeInputSection() {
+            const mode = document.getElementById('calcModeSetup').value;
+            const container = document.getElementById('gradeInputContainer');
+            gradeData.mode = mode;
+
+            // 전체 만점 계산
+            const totalMaxScore = areas.reduce((sum, a) => sum + (a.score || 0), 0);
+
+            const levels = ['A', 'B', 'C', 'D', 'E'];
+            let html = `<table><thead><tr><th>구분</th>`;
+            levels.forEach(lv => {
+                html += `<th>${lv}</th>`;
+            });
+            html += `</tr></thead><tbody>`;
+
+            if (mode === 'total') {
+                // 전체영역: 한 줄만, 만점 표시
+                html += `<tr><td><strong>전체 영역 (${totalMaxScore}점)</strong></td>`;
+                levels.forEach((lv, i) => {
+                    const val = gradeData.values['total'] ? (gradeData.values['total'][i] || '') : '';
+                    html += `<td><input type="number" class="grade-input" data-area="total" data-level="${i}" value="${val}" min="0" max="${totalMaxScore}" style="text-align:center;" onchange="updateGradeData(this)"></td>`;
+                });
+                html += `</tr>`;
+            } else {
+                // 영역별: 영역 수만큼, 각 영역의 만점 표시
+                areas.forEach((area, areaIdx) => {
+                    const areaName = area.name || '영역' + (areaIdx + 1);
+                    const areaMaxScore = area.score || 0;
+                    html += `<tr><td><strong>${areaName} (${areaMaxScore}점)</strong></td>`;
+                    levels.forEach((lv, levelIdx) => {
+                        const val = gradeData.values[`area_${areaIdx}`] ? (gradeData.values[`area_${areaIdx}`][levelIdx] || '') : '';
+                        html += `<td><input type="number" class="grade-input" data-area="area_${areaIdx}" data-level="${levelIdx}" value="${val}" min="0" max="${areaMaxScore}" style="text-align:center;" onchange="updateGradeData(this)"></td>`;
+                    });
+                    html += `</tr>`;
+                });
+            }
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // 등급 데이터 업데이트
+        function updateGradeData(inputEl) {
+            const areaKey = inputEl.dataset.area;
+            const levelIdx = parseInt(inputEl.dataset.level);
+            const value = parseFloat(inputEl.value) || 0;
+
+            if (!gradeData.values[areaKey]) {
+                gradeData.values[areaKey] = [0, 0, 0, 0, 0];
+            }
+            gradeData.values[areaKey][levelIdx] = value;
+
+            // 결과 자동 업데이트
+            calculateFinal();
+        }
+
+
+        function updateTotals() {
+            const totalScore = areas.reduce((sum, a) => sum + a.score, 0);
+            const totalRatio = areas.reduce((sum, a) => sum + a.ratio, 0);
+            document.getElementById('totalRawScore').innerText = totalScore;
+            document.getElementById('totalRatio').innerText = `${totalRatio}% / 100%`;
+            if (totalRatio > 100) document.getElementById('totalRatio').style.color = 'red';
+            else document.getElementById('totalRatio').style.color = 'inherit';
+        }
+
+        // 최종 산출
+        function calculateFinal() {
+            const grid = document.getElementById('finalResultGrid');
+            grid.innerHTML = '';
+            const levels = ['A', 'B', 'C', 'D', 'E'];
+            let finalScores = [0, 0, 0, 0, 0];
+
+            // 데이터 유효성 체크
+            const hasData = gradeData.mode === 'total'
+                ? gradeData.values['total'] && gradeData.values['total'].some(v => v > 0)
+                : Object.keys(gradeData.values).some(k => k.startsWith('area_') && gradeData.values[k].some(v => v > 0));
+
+            if (!hasData || areas.length === 0) {
+                grid.innerHTML = '<p style="grid-column: span 5; text-align:center; padding:20px;">데이터가 없습니다. STEP 1, 2를 먼저 완료해주세요.</p>';
+                return;
+            }
+
+            // 전체 만점 합계 계산
+            const totalMaxScore = areas.reduce((sum, a) => sum + (a.score || 0), 0);
+
+            // 산출 로직:
+            // - 전체영역 모드: gradeData.values['total']에는 점수가 직접 입력됨 (totalMaxScore 기준)
+            //   각 영역의 반영비율을 적용하여 환산
+            // - 영역별 모드: 각 영역별로 점수 입력, 배점이 100점이면 반영비율 적용, 아니면 그대로 사용
+            if (gradeData.mode === 'total') {
+                // 전체영역 모드: 입력된 점수를 반영비율로 분배
+                const gradeValues = gradeData.values['total'] || [0, 0, 0, 0, 0];
+                for (let c = 0; c < 5; c++) {
+                    // 전체 입력값(gradeValues[c])을 각 영역의 반영비율에 따라 분배
+                    let totalWeighted = areas.reduce((sum, area) => {
+                        // 배점이 100점이면 반영비율 적용하여 산출, 아니면 입력값의 비율만큼
+                        if (area.score === 100) {
+                            return sum + (gradeValues[c] / totalMaxScore * 100) * (area.ratio / 100);
+                        } else {
+                            // 이미 반영비율이 적용된 배점이므로 입력값의 비율만큼 계산
+                            return sum + (gradeValues[c] / totalMaxScore) * area.score;
+                        }
+                    }, 0);
+                    finalScores[c] = totalWeighted;
+                }
+            } else {
+                // 영역별 모드: 각 영역별로 입력된 점수를 그대로 합산
+                for (let c = 0; c < 5; c++) {
+                    let totalWeighted = areas.reduce((sum, area, i) => {
+                        const areaGrades = gradeData.values[`area_${i}`] || [0, 0, 0, 0, 0];
+                        const inputScore = areaGrades[c] || 0;
+
+                        // 배점이 100점이면 반영비율 적용, 아니면 입력값 그대로 사용
+                        if (area.score === 100) {
+                            return sum + inputScore * (area.ratio / 100);
+                        } else {
+                            // 이미 반영비율이 적용된 배점 (예: 20점 만점)
+                            return sum + inputScore;
+                        }
+                    }, 0);
+                    finalScores[c] = totalWeighted;
+                }
+            }
+
+            levels.forEach((lv, i) => {
+                const score = finalScores[i].toFixed(2);
+                grid.innerHTML += `
+                <div class="result-card">
+                    <div style="font-weight:bold; color:#1e40af; margin-bottom:10px;">${lv} 수준 경계점</div>
+                    <div class="score-val">${score}</div>
+                    <div style="font-size:0.8rem; color:#64748b;">환산 점수</div>
+                </div>
+            `;
+            });
+        }
+
+        // 파일 저장
+        function exportResult() {
+            const data = {
+                title: "수행평가 추정분할점수 산출 결과",
+                date: new Date().toLocaleString(),
+                areas,
+                gradeData
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+
+            // 파일명: 수행평가 추정분할점수 산출(YYYY-MM-DD_HHMM).json
+            const now = new Date();
+            const dateTimeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+            a.download = `수행평가 추정분할점수 산출(${dateTimeStr}).json`;
+            a.click();
+        }
+
+        // 프로젝트 전체 저장/불러오기 기능
+        function saveData() { exportResult(); }
+
+        function loadData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    areas = data.areas || [{ name: '', score: 0, ratio: 0 }];
+                    gradeData = data.gradeData || { mode: 'total', values: {} };
+
+                    renderAreas();
+                    document.getElementById('calcModeSetup').value = gradeData.mode;
+                    renderGradeInputSection();
+
+                    alert("데이터를 불러왔습니다.");
+                } catch (err) {
+                    alert("파일을 읽는 중 오류가 발생했습니다.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function () {
+            renderAreas();
+            renderGradeInputSection();
+            calculateFinal();
+        });
+    </script>
+
+</body>
+
+</html>
