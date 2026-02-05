@@ -461,8 +461,8 @@
             gap: 5px;
         }
 
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
+        /* Mobile Adjustments - Increased breakpoint and forced styles */
+        @media (max-width: 1024px) {
             body {
                 padding: 10px;
             }
@@ -504,19 +504,20 @@
             }
 
             /* Touch friendly */
-
             .tab {
                 padding: 12px 14px;
                 font-size: 0.9rem;
             }
 
+            /* Force vertical stacking for final action buttons */
             .final-actions-wrap {
-                flex-direction: column;
-                gap: 15px;
+                flex-direction: column !important;
+                gap: 20px !important;
+                height: auto !important;
             }
 
             .final-sub-actions {
-                position: static;
+                position: static !important;
                 width: 100%;
                 justify-content: center;
                 margin-top: 5px;
