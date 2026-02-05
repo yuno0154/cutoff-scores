@@ -438,6 +438,29 @@
             color: #475569;
         }
 
+        /* Final Action Buttons */
+        .final-actions-wrap {
+            position: relative;
+            text-align: center;
+            margin-bottom: 30px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .final-calc-btn {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+        }
+
+        .final-sub-actions {
+            position: absolute;
+            right: 0;
+            display: flex;
+            gap: 5px;
+        }
+
         /* Mobile Adjustments */
         @media (max-width: 768px) {
             body {
@@ -485,6 +508,18 @@
             .tab {
                 padding: 12px 14px;
                 font-size: 0.9rem;
+            }
+
+            .final-actions-wrap {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .final-sub-actions {
+                position: static;
+                width: 100%;
+                justify-content: center;
+                margin-top: 5px;
             }
         }
 
@@ -771,11 +806,9 @@
                 <div id="detailBreakdown"></div>
             </div>
 
-            <div
-                style="position:relative; text-align:center; margin-bottom: 30px; margin-top: 10px; display:flex; justify-content:center; align-items:center;">
-                <button class="btn btn-primary" style="padding:15px 40px;font-size:1.1rem;"
-                    onclick="calculateFinal(true)">📊 추정분할점수 산출</button>
-                <div style="position:absolute; right:0;">
+            <div class="final-actions-wrap">
+                <button class="btn btn-primary final-calc-btn" onclick="calculateFinal(true)">📊 추정분할점수 산출</button>
+                <div class="final-sub-actions">
                     <button class="btn btn-warning" onclick="alert('나이스에서 결재를 상신합니다.')">승인 요청</button>
                     <button class="btn btn-danger" onclick="alert('마감합니다.')">마감</button>
                 </div>
