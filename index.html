@@ -691,17 +691,18 @@
             <div class="section-box">
                 <div class="section-title"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>기본 정보</div>
                 <div class="grid-3">
-                    <div><label>학년도</label><select id="year" style="width:100%" onchange="project.info.year=this.value">
+                    <div><label>학년도</label><select id="year" style="width:100%;text-align:center;"
+                            onchange="project.info.year=this.value">
                             <option>2026</option>
                             <option>2025</option>
                         </select></div>
-                    <div><label>학기</label><select id="semester" style="width:100%"
+                    <div><label>학기</label><select id="semester" style="width:100%;text-align:center;"
                             onchange="project.info.semester=this.value">
                             <option>1학기</option>
                             <option>2학기</option>
                         </select></div>
-                    <div><label>과목명</label><input type="text" id="subject" style="width:100%" placeholder="예: 물리학Ⅰ"
-                            oninput="project.info.subject=this.value">
+                    <div><label>과목명</label><input type="text" id="subject" style="width:100%;text-align:center;"
+                            placeholder="예: 물리학Ⅰ" oninput="project.info.subject=this.value">
                     </div>
                 </div>
             </div>
