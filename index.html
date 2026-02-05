@@ -684,7 +684,7 @@
                         aria-hidden="true"></i>전체 저장</button>
                 <button class="btn btn-dark btn-large" onclick="document.getElementById('fullLoad').click()"><i
                         class="fa-solid fa-folder-open" aria-hidden="true"></i>불러오기</button>
-                <input type="file" id="fullLoad" style="display:none" onchange="loadFullProject(event)">
+                <input type="file" id="fullLoad" style="display:none" onchange="loadFullProject(event)" accept="*/*">
             </div>
         </header>
 
@@ -986,7 +986,7 @@
             const paper = project.papers[currentPaperIdx];
             const fileName = paper.fileName || '선택된 파일 없음';
             let html = `<div class="section-box"><div class="section-title">📁 문항정보표 업로드</div>
-        <input type="file" id="fileInput_${currentPaperIdx}" onchange="handleExcelUpload(event,${currentPaperIdx})" style="display:none">
+        <input type="file" id="fileInput_${currentPaperIdx}" onchange="handleExcelUpload(event,${currentPaperIdx})" style="display:none" accept="*/*">
         <div style="display:flex;align-items:center;gap:10px;">
             <button class="btn btn-primary" onclick="document.getElementById('fileInput_${currentPaperIdx}').click()">파일 선택</button>
             <span id="fileName_${currentPaperIdx}" style="color:#64748b;">${fileName}</span>
