@@ -6,40 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>나이스 추정분할점수 산출 실습</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;800&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
-            /* Sophisticated Palette */
-            --primary: #4338ca;
-            /* Indigo 700 */
-            --primary-light: #6366f1;
-            /* Indigo 500 */
-            --bg-body: #f8fafc;
-            /* Slate 50 */
-            --bg-card: #ffffff;
-            --text-main: #334155;
-            /* Slate 700 */
-            --text-sub: #64748b;
-            /* Slate 500 */
-            --border: #e2e8f0;
-            /* Slate 200 */
-
-            --success: #10b981;
-            /* Emerald 500 */
-            --warning: #f59e0b;
-            /* Amber 500 */
+            --primary: #2563eb;
+            --bg: #f1f5f9;
+            --border: #cbd5e1;
             --danger: #ef4444;
-            /* Red 500 */
-
-            --radius-md: 12px;
-            --radius-sm: 8px;
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-
-            --font-main: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
+            --success: #22c55e;
+            --dark: #1e293b;
+            --warning: #f59e0b;
         }
 
         * {
@@ -47,260 +22,170 @@
         }
 
         body {
-            font-family: var(--font-main);
-            background: var(--bg-body);
-            color: var(--text-main);
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background: var(--bg);
             margin: 0;
-            padding: 16px;
-            line-height: 1.5;
-            -webkit-font-smoothing: antialiased;
+            padding: 20px;
+            color: #1e293b;
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1400px;
             margin: 0 auto;
-            background: var(--bg-card);
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-lg);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
 
-        /* Header */
         header {
-            background: #ffffff;
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: white;
+            padding: 20px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
         }
 
-        .title-wrap h1 {
-            font-size: 1.25rem;
+        header h1 {
             margin: 0;
-            color: #1e293b;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 700;
+            font-size: 1.5rem;
         }
 
-        .title-wrap h1 i {
-            color: var(--primary);
-        }
-
-        .version {
-            font-size: 0.75rem;
-            background: #e0e7ff;
-            color: var(--primary);
-            padding: 2px 8px;
-            border-radius: 99px;
-            font-weight: 600;
-        }
-
-        .subtitle {
-            font-size: 0.825rem;
-            color: var(--text-sub);
-            margin-top: 4px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        /* Navigation Tabs (Scrollable on mobile) */
         .tabs {
             display: flex;
-            background: #ffffff;
-            border-bottom: 1px solid var(--border);
+            background: #334155;
             overflow-x: auto;
-            padding: 0 10px;
-            gap: 5px;
-            scrollbar-width: none;
-            /* Hide scrollbar Firefox */
         }
-
-        .tabs::-webkit-scrollbar {
-            display: none;
-        }
-
-        /* Hide scrollbar Chrome */
 
         .tab {
-            padding: 16px 20px;
-            font-size: 1.05rem;
-            color: var(--text-sub);
+            padding: 15px 20px;
+            color: #cbd5e1;
+            cursor: pointer;
             border: none;
             background: none;
-            cursor: pointer;
+            font-size: 0.95rem;
             white-space: nowrap;
-            border-bottom: 3px solid transparent;
-            font-weight: 600;
-            font-family: var(--font-main);
-            transition: all 0.2s;
+            transition: 0.2s;
         }
 
         .tab:hover {
-            color: var(--primary);
-            background: #f1f5f9;
+            color: #fbbf24;
+            background: #475569;
         }
 
         .tab.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-            font-weight: 800;
-            background: #eef2ff;
+            color: #1e293b;
+            background: #fbbf24;
+            font-weight: bold;
+            border-bottom: 3px solid #60a5fa;
         }
 
-        /* Content Area */
         .content {
-            padding: 24px;
+            padding: 25px;
             display: none;
-            animation: fadeIn 0.3s ease-out;
-            min-height: 400px;
+            min-height: 500px;
         }
 
         .content.active {
             display: block;
+            animation: fadeIn 0.3s;
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(4px);
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0);
             }
         }
 
-        /* Section Cards */
         .section-box {
-            background: #ffffff;
             border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
+            border-radius: 8px;
             padding: 20px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+            background: #fff;
         }
 
         .section-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .section-title i {
-            color: var(--primary);
-            font-size: 1rem;
-        }
-
-        .teacher-control {
-            display: flex;
-            gap: 10px;
+            font-weight: bold;
+            font-size: 1.05rem;
             margin-bottom: 15px;
+            border-left: 4px solid var(--primary);
+            padding-left: 10px;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
         }
 
-        .teacher-control input {
-            flex: 1;
-        }
-
-        .teacher-control button {
-            white-space: nowrap;
-        }
-
-        /* Forms & Inputs */
-        input[type="text"],
-        input[type="number"],
-        select,
-        button,
-        textarea {
-            font-family: inherit;
-        }
-
-        input[type="text"],
-        input[type="number"],
-        select {
+        table {
             width: 100%;
-            padding: 10px 14px;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
             border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            background: #ffffff;
-            font-size: 0.95rem;
-            color: var(--text-main);
-            transition: all 0.2s;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+
+        input,
+        select {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            text-align: center;
         }
 
         input:focus,
         select:focus {
             outline: none;
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px #e0e7ff;
+            border-color: var(--primary);
         }
 
-        label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-sub);
-            margin-bottom: 6px;
-        }
-
-        /* Buttons */
         .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 10px 18px;
-            border-radius: var(--radius-sm);
-            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.2s;
-            box-shadow: var(--shadow-sm);
+            border: none;
+            color: white;
+            transition: 0.2s;
         }
 
-        .btn:active {
-            transform: scale(0.98);
+        .btn:hover {
+            opacity: 0.9;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: white;
+            background: var(--primary);
         }
 
         .btn-success {
             background: var(--success);
-            color: white;
         }
 
         .btn-danger {
             background: var(--danger);
-            color: white;
         }
 
         .btn-dark {
-            background: #334155;
-            color: white;
+            background: var(--dark);
         }
 
         .btn-warning {
             background: var(--warning);
-            color: white;
         }
 
         .btn-sm {
@@ -308,265 +193,119 @@
             font-size: 0.85rem;
         }
 
-        .btn-large {
-            padding: 12px 20px;
-            font-size: 1rem;
-            font-weight: 700;
-        }
-
-        /* Tables */
-        /* 테이블 스타일 */
-        .table-wrapper {
-            overflow-x: auto;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.95rem;
-            white-space: nowrap;
-            /* Force scroll on small screens */
-        }
-
-        th,
-        td {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-            text-align: center;
-            /* 기본 가운데 정렬 */
-        }
-
-        th {
-            background: #f8fafc;
-            color: #475569;
-            font-weight: 600;
-        }
-
-        td {
-            color: #334155;
-            vertical-align: middle;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 6px 10px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            text-align: center;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* Responsive Grids */
         .grid-3 {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        .selection-row {
-            display: flex;
             gap: 15px;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: nowrap;
-        }
-
-        .selection-row select {
-            width: 220px;
-            flex-shrink: 0;
-        }
-
-        .selection-label {
-            color: var(--primary);
-            font-weight: 700;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .grid-5 {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 16px;
-        }
-
-        /* Info & Alert Boxes */
-        .info-box,
-        .warning-box {
-            padding: 16px;
-            border-radius: var(--radius-sm);
-            font-size: 0.95rem;
-            margin-bottom: 16px;
-            display: flex;
-            gap: 10px;
-            align-items: start;
-            line-height: applied;
+            gap: 15px;
         }
 
         .info-box {
-            background: #eff6ff;
-            color: #1e40af;
-            border: 1px solid #dbeafe;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            color: #0369a1;
+            font-size: 0.9rem;
         }
 
         .warning-box {
-            background: #fffbeb;
-            color: #92400e;
+            background: #fef3c7;
             border: 1px solid #fcd34d;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 99px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: #f1f5f9;
-            color: #475569;
-        }
-
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-
-            .content {
-                padding: 16px;
-            }
-
-            header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .header-actions {
-                width: 100%;
-                justify-content: space-between;
-                gap: 8px;
-            }
-
-            .header-actions .btn,
-            .header-actions .deploy-link {
-                flex: 1;
-                text-align: center;
-                justify-content: center;
-                padding: 10px;
-                font-size: 0.85rem;
-            }
-
-            .grid-3,
-            .grid-5 {
-                grid-template-columns: 1fr;
-            }
-
-            /* Specific overrides for tables/cards on mobile if needed */
-            input,
-            select,
-            button {
-                min-height: 44px;
-            }
-
-            /* Touch friendly */
-
-            .tab {
-                padding: 12px 14px;
-                font-size: 0.9rem;
-            }
-        }
-
-        /* Sub Tabs */
-        /* Sub Tabs */
-        .sub-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-            padding-left: 2px;
-            /* Prevent shadow clipping */
-        }
-
-        .sub-tab {
-            padding: 10px 18px;
-            background: #ffffff;
-            border: 1px solid var(--border);
-            border-radius: 99px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            white-space: nowrap;
-            transition: all 0.2s;
-            color: var(--text-sub);
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .sub-tab:hover {
-            border-color: var(--primary-light);
-            color: var(--primary);
-            background: #f8fafc;
-            transform: translateY(-1px);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            color: #92400e;
         }
 
         .summary-card {
-            text-align: center;
-            justify-content: center;
-            background: #eff6ff;
-            border: 1px solid #dbeafe;
-            border-radius: 12px;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            border: 1px solid #bfdbfe;
+            text-align: center;
+        }
+
+        .score-val {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .ratio-ok {
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
+        .ratio-warn {
+            background: #fef9c3;
+            color: #854d0e;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
+        .ratio-error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
+        .sub-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sub-tab {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
         }
 
         .sub-tab.active {
             background: var(--primary);
             color: white;
             border-color: var(--primary);
-            font-weight: 600;
-            box-shadow: var(--shadow-md);
         }
 
         .sub-tab.completed {
-            border-color: var(--success);
-            color: var(--success);
-            background: #f0fdf4;
-            font-weight: 600;
+            background: #dcfce7;
+            color: #166534;
+            border-color: #86efac;
         }
 
-        .sub-tab.completed.active {
-            background: var(--success);
-            color: white;
-            border-color: var(--success);
+        .invalid-input {
+            background: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            color: #dc2626 !important;
         }
 
-        .sub-tab-add {
-            background: #f8fafc;
-            border: 1px dashed #94a3b8;
-            color: #64748b;
+        .warning-diff {
+            background: #fef3c7 !important;
+            border-color: #f59e0b !important;
         }
 
-        .sub-tab-add:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: white;
+        .diff-alert {
+            color: #dc2626;
+            font-weight: bold;
         }
 
-        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -575,53 +314,83 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
+            z-index: 9999;
             justify-content: center;
+            align-items: center;
         }
 
         .modal-content {
             background: white;
-            width: 90%;
+            border-radius: 12px;
+            padding: 25px;
             max-width: 500px;
-            padding: 24px;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-lg);
-            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 90%;
         }
 
-        @keyframes slideUp {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .ratio-ok {
-            color: var(--success);
+        .radio-label {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .radio-label input {
+            margin-right: 10px;
+        }
+
+        .teacher-control {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .round-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .round-tab {
+            padding: 8px 16px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
             font-weight: bold;
+            color: #64748b;
         }
 
-        .ratio-warn {
-            color: var(--warning);
-            font-weight: bold;
-        }
-
-        .ratio-error {
-            color: var(--danger);
-            font-weight: bold;
-        }
-
-        .deploy-link {
-            text-decoration: none;
+        .round-tab.active {
+            background: white;
             color: var(--primary);
-            font-size: 0.9rem;
-            font-weight: 500;
+            border-color: var(--primary);
+        }
+
+        .round-tab.add-btn {
+            background: #ecfdf5;
+            color: #059669;
+            border-color: #a7f3d0;
+        }
+
+        .badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -629,17 +398,14 @@
 <body>
     <div class="container">
         <header>
-            <div class="title-wrap">
-                <h1><i class="fa-solid fa-chart-pie" aria-hidden="true"></i>나이스 추정분할점수 산출 실습 <span
-                        class="version">v1.0</span></h1>
-                <div class="subtitle">만든이: 사곡고 수석교사 최연호</div>
+            <div>
+                <h1>📊 나이스 추정분할점수 산출 실습 (ver 1.0)</h1>
+                <div style="font-size:0.85rem;opacity:0.8;margin-top:5px;">만든이 : 사곡고 수석교사 최연호</div>
             </div>
-            <div class="header-actions">
-                <button class="btn btn-success btn-large" onclick="saveFullProject()"><i class="fa-solid fa-floppy-disk"
-                        aria-hidden="true"></i>전체 저장</button>
-                <button class="btn btn-dark btn-large" onclick="document.getElementById('fullLoad').click()"><i
-                        class="fa-solid fa-folder-open" aria-hidden="true"></i>불러오기</button>
-                <input type="file" id="fullLoad" style="display:none" accept="*/*" onchange="loadFullProject(event)">
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-success" onclick="saveFullProject()">💾 전체 저장</button>
+                <button class="btn btn-dark" onclick="document.getElementById('fullLoad').click()">📂 불러오기</button>
+                <input type="file" id="fullLoad" style="display:none" accept=".json" onchange="loadFullProject(event)">
             </div>
         </header>
 
@@ -653,7 +419,7 @@
         <!-- 탭 0: 평가구조 설정 -->
         <div id="tab-0" class="content active">
             <div class="section-box">
-                <div class="section-title"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>기본 정보</div>
+                <div class="section-title">📝 기본 정보</div>
                 <div class="grid-3">
                     <div><label>학년도</label><select id="year" style="width:100%" onchange="project.info.year=this.value">
                             <option>2026</option>
@@ -671,8 +437,7 @@
             </div>
 
             <div class="section-box">
-                <div class="section-title"><i class="fa-solid fa-users" aria-hidden="true"></i>교사 등록 <span class="badge"
-                        id="teacherCount">0명</span></div>
+                <div class="section-title">👥 교사 등록 <span class="badge" id="teacherCount">0명</span></div>
                 <div class="teacher-control">
                     <input type="text" id="newTeacherName" placeholder="교사명 입력"
                         onkeypress="if(event.key==='Enter')addTeacher()">
@@ -682,51 +447,46 @@
             </div>
 
             <div class="section-box">
-                <div class="section-title"><i class="fa-solid fa-list-check" aria-hidden="true"></i>정기시험 구성 <span>합계:
-                        <span id="paperRatioTotal" class="ratio-warn">0%</span></span>
+                <div class="section-title">📋 정기시험 구성 <span>합계: <span id="paperRatioTotal"
+                            class="ratio-warn">0%</span></span>
                     <button class="btn btn-primary btn-sm" onclick="addPaper()">+ 추가</button>
                 </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>구분</th>
-                                <th>배점</th>
-                                <th>반영비율(%)</th>
-                                <th>관리</th>
-                            </tr>
-                        </thead>
-                        <tbody id="paperTbody"></tbody>
-                    </table>
-                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>구분</th>
+                            <th>배점</th>
+                            <th>반영비율(%)</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paperTbody"></tbody>
+                </table>
             </div>
 
             <div class="section-box">
-                <div class="section-title"><i class="fa-solid fa-list-check" aria-hidden="true"></i>수행평가 구성 <span>합계:
-                        <span id="perfRatioTotal" class="ratio-warn">0%</span></span>
+                <div class="section-title">📋 수행평가 구성 <span>합계: <span id="perfRatioTotal"
+                            class="ratio-warn">0%</span></span>
                     <button class="btn btn-primary btn-sm" onclick="addPerf()">+ 추가</button>
                 </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>영역명</th>
-                                <th>배점</th>
-                                <th>반영비율(%)</th>
-                                <th>관리</th>
-                            </tr>
-                        </thead>
-                        <tbody id="perfTbody"></tbody>
-                    </table>
-                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>영역명</th>
+                            <th>배점</th>
+                            <th>반영비율(%)</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="perfTbody"></tbody>
+                </table>
             </div>
             <div class="info-box">💡 반영비율 합계: <strong id="totalRatio">0%</strong> (100%가 되어야 합니다)</div>
         </div>
 
         <!-- 탭 1: 정기시험 -->
         <div id="tab-1" class="content">
-            <div class="info-box"><i class="fa-solid fa-thumbtack" aria-hidden="true"></i>각 정기시험별로 문항정보표를 업로드하고, 교사별
-                예상정답률을 입력합니다.</div>
+            <div class="info-box">📌 각 정기시험별로 문항정보표를 업로드하고, 교사별 예상정답률을 입력합니다.</div>
             <div class="sub-tabs" id="paperSubTabs"></div>
             <div id="paperContent"></div>
         </div>
@@ -735,52 +495,52 @@
         <div id="tab-2" class="content">
             <div class="info-box">📌 수행평가 전체영역 또는 영역별 중 하나를 선택한 후, 성취수준별(A~E) 분할점수를 입력합니다.</div>
             <div class="section-box">
-                <div class="section-title"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>수행평가 성취수준별 분할점수
-                    입력 </div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead id="perfCutsThead">
-                            <tr>
-                                <th>영역명</th>
-                                <th>만점</th>
-                                <th>A</th>
-                                <th>B</th>
-                                <th>C</th>
-                                <th>D</th>
-                                <th>E</th>
-                            </tr>
-                        </thead>
-                        <tbody id="perfCutsTbody"></tbody>
-                    </table>
-                </div>
+                <div class="section-title">📝 수행평가 성취수준별 분할점수 입력 </div>
+                <table>
+                    <thead id="perfCutsThead">
+                        <tr>
+                            <th>영역명</th>
+                            <th>만점</th>
+                            <th>A</th>
+                            <th>B</th>
+                            <th>C</th>
+                            <th>D</th>
+                            <th>E</th>
+                        </tr>
+                    </thead>
+                    <tbody id="perfCutsTbody"></tbody>
+                </table>
             </div>
             <div class="section-box">
-                <div class="section-title"><i class="fa-solid fa-chart-column" aria-hidden="true"></i>🏆 수행평가 산출 결과
-                </div>
+                <div class="section-title">📊 수행평가 반영비율 적용 결과</div>
                 <div class="grid-5" id="perfResultGrid"></div>
             </div>
         </div>
 
         <!-- 탭 3: 최종결과 -->
         <div id="tab-3" class="content">
-            <!-- Calculate Button removed from here -->
-
             <div class="section-box">
-                <div class="section-title">📊 상세 산출 내역</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="section-title">📊 상세 산출 내역</div>
+                </div>
                 <!-- 상세 산출 내역 테이블은 calculateFinal() 호출 시 렌더링됨 -->
                 <div id="detailBreakdown"></div>
             </div>
 
             <div
-                style="position:relative; text-align:center; margin-bottom: 30px; margin-top: 10px; display:flex; justify-content:center; align-items:center;">
+                style="position:relative; text-align:center; margin: 20px 0; display:flex; justify-content:center; align-items:center;">
                 <button class="btn btn-primary" style="padding:15px 40px;font-size:1.1rem;"
-                    onclick="calculateFinal(true)">📊 추정분할점수 산출</button>
+                    onclick="calculateFinal()">📊 추정분할점수 산출</button>
                 <div style="position:absolute; right:0;">
                     <button class="btn btn-warning" onclick="alert('나이스에서 결재를 상신합니다.')">승인 요청</button>
                     <button class="btn btn-danger" onclick="alert('마감합니다.')">마감</button>
                 </div>
             </div>
 
+            <!-- 추정분할점수 산출 결과는 버튼 누르기 전에도 보일 수 있으나, 문맥상 '상세 산출 내역'은 항상 보이고 결과는 버튼 눌러 갱신/확인하는 구조가 자연스러움. -->
+            <!-- 하지만 요청사항은 "상세 산출 내역은 버튼을 누르지 않아도 표시"임. -->
+            <!-- 따라서 초기 로딩 시 혹은 탭 진입 시 calculateFinal이 호출되어 이미 그려져 있을 것임. -->
+            <!-- 버튼은 '재산출' 또는 '확인' 차원에서 존재하거나, 하단 결과영역 갱신용일 수 있음. -->
             <div class="section-box">
                 <div class="section-title">🏆 추정분할점수 산출 결과</div>
                 <div class="grid-5" id="finalResultGrid"></div>
@@ -867,7 +627,7 @@
             else if (idx === 1) renderPaperTab();
             else if (idx === 2) renderPerfTab();
             else if (idx === 3) {
-                calculateFinal(false); // 탭 진입 시에는 결과 카드 표시 안 함 (상세 내역만 계산/표시)
+                calculateFinal();
             }
         }
 
@@ -906,21 +666,17 @@
             let pSum = 0, fSum = 0;
             document.getElementById('paperTbody').innerHTML = project.papers.map((p, i) => {
                 pSum += p.ratio;
-                return `<tr>
-                    <td><input class="form-input" value="${p.name}" onchange="project.papers[${i}].name=this.value" style="width:100%;max-width:200px;"></td>
-                    <td><input type="number" class="form-input" value="${p.score}" onchange="project.papers[${i}].score=Number(this.value)" style="width:80px;"></td>
-                    <td><input type="number" class="form-input" value="${p.ratio}" onchange="project.papers[${i}].ratio=Number(this.value);renderSetup()" style="width:80px;"></td>
-                    <td><button class="btn btn-danger btn-sm" onclick="removePaper(${i})">삭제</button></td>
-                </tr>`;
+                return `<tr><td><input value="${p.name}" onchange="project.papers[${i}].name=this.value" style="width:150px"></td>
+        <td><input type="number" value="${p.score}" onchange="project.papers[${i}].score=Number(this.value)" style="width:80px"></td>
+        <td><input type="number" value="${p.ratio}" onchange="project.papers[${i}].ratio=Number(this.value);renderSetup()" style="width:80px"></td>
+        <td><button class="btn btn-danger btn-sm" onclick="removePaper(${i})">삭제</button></td></tr>`;
             }).join('');
             document.getElementById('perfTbody').innerHTML = project.perfs.map((p, i) => {
                 fSum += p.ratio;
-                return `<tr>
-                    <td><input class="form-input" value="${p.name}" onchange="project.perfs[${i}].name=this.value" style="width:100%;max-width:200px;"></td>
-                    <td><input type="number" class="form-input" value="${p.score}" onchange="project.perfs[${i}].score=Number(this.value)" style="width:80px;"></td>
-                    <td><input type="number" class="form-input" value="${p.ratio}" onchange="project.perfs[${i}].ratio=Number(this.value);renderSetup()" style="width:80px;"></td>
-                    <td><button class="btn btn-danger btn-sm" onclick="removePerf(${i})">삭제</button></td>
-                </tr>`;
+                return `<tr><td><input value="${p.name}" onchange="project.perfs[${i}].name=this.value" style="width:150px"></td>
+        <td><input type="number" value="${p.score}" onchange="project.perfs[${i}].score=Number(this.value)" style="width:80px"></td>
+        <td><input type="number" value="${p.ratio}" onchange="project.perfs[${i}].ratio=Number(this.value);renderSetup()" style="width:80px"></td>
+        <td><button class="btn btn-danger btn-sm" onclick="removePerf(${i})">삭제</button></td></tr>`;
             }).join('');
             const total = pSum + fSum;
             document.getElementById('paperRatioTotal').textContent = pSum + '%';
@@ -942,7 +698,7 @@
             const paper = project.papers[currentPaperIdx];
             const fileName = paper.fileName || '선택된 파일 없음';
             let html = `<div class="section-box"><div class="section-title">📁 문항정보표 업로드</div>
-        <input type="file" id="fileInput_${currentPaperIdx}" accept="*/*" onchange="handleExcelUpload(event,${currentPaperIdx})" style="display:none">
+        <input type="file" id="fileInput_${currentPaperIdx}" accept=".xlsx,.xls" onchange="handleExcelUpload(event,${currentPaperIdx})" style="display:none">
         <div style="display:flex;align-items:center;gap:10px;">
             <button class="btn btn-primary" onclick="document.getElementById('fileInput_${currentPaperIdx}').click()">파일 선택</button>
             <span id="fileName_${currentPaperIdx}" style="color:#64748b;">${fileName}</span>
@@ -962,7 +718,7 @@
                         <span style="font-size:0.9rem;color:#334155;margin-left:10px;">(선택형: <b>${selCount}</b> / 서답형: <b>${subCount}</b> / 총배점: <b>${totalScore.toFixed(1)}</b>점)</span>
                     </div>
                     <div style="font-size:0.85rem;color:#64748b;margin-bottom:5px;">전체 문항 리스트 (스크롤하여 확인):</div>
-                    <div class="table-wrapper" style="max-height:250px;overflow-y:auto;">
+                    <div style="max-height:250px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:4px;">
                         <table style="font-size:0.85rem;background:white;">
                             <thead style="position:sticky;top:0;background:#f1f5f9;z-index:1;">
                                 <tr><th style="padding:8px;border-bottom:2px solid #cbd5e1;width:50px;">번호</th>
@@ -985,9 +741,9 @@
                 </div>`;
 
                 html += `<div class="section-box"><div class="section-title">👥 교사 선택</div>
-            <div class="selection-row">
-                <select id="currentTeacher" onchange="loadTeacherInput()"><option value="">교사 선택</option>${project.teachers.map(t => `<option value="${t}">${t}</option>`).join('')}</select>
-                <span id="currentTeacherLabel" class="selection-label"></span>
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:15px;">
+                <select id="currentTeacher" onchange="loadTeacherInput()" style="min-width:150px;"><option value="">교사 선택</option>${project.teachers.map(t => `<option value="${t}">${t}</option>`).join('')}</select>
+                <span id="currentTeacherLabel" style="color:var(--primary);font-weight:bold;"></span>
             </div></div>`;
 
                 html += `<div class="section-box"><div class="section-title">📝 최소능력자 예상정답률 입력</div>
@@ -1134,15 +890,13 @@
             for (let i = 0; i < td.rounds.length; i++) {
                 const done = td.completedRounds.includes(i);
                 const isActive = i === paper.currentRound;
-                html += `<button class="sub-tab ${isActive ? 'active' : ''} ${done ? 'completed' : ''}" onclick="switchRound(${i})">
-                    ${done ? '<i class="fa-solid fa-check-circle"></i>' : ''} ${i + 1}라운드
-                </button>`;
+                html += `<button class="round-tab ${isActive ? 'active' : ''}" onclick="switchRound(${i})">${i + 1}라운드${done ? ' ✓' : ''}</button>`;
             }
-            html += `<button class="sub-tab sub-tab-add" onclick="addRound()"><i class="fa-solid fa-plus"></i> 추가</button>`;
+            html += `<button class="round-tab add-btn" onclick="addRound()">+ 추가</button>`;
             if (td.rounds.length > 1) {
-                html += `<button class="sub-tab" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;margin-left:auto;" onclick="deleteRound()"><i class="fa-solid fa-trash"></i> 삭제</button>`;
+                html += `<button class="round-tab" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;margin-left:auto;" onclick="deleteRound()">🗑️ 삭제</button>`;
             }
-            document.getElementById('roundTabsContainer').innerHTML = `<div class="sub-tabs">${html}</div>`;
+            document.getElementById('roundTabsContainer').innerHTML = `<div class="round-tabs" style="display:flex;gap:8px;flex-wrap:wrap;">${html}</div>`;
         }
 
         function switchRound(idx) { project.papers[currentPaperIdx].currentRound = idx; renderRoundTabs(); renderInputTable(); }
@@ -1233,7 +987,7 @@
             const headers5 = ['A/B(%)', 'B/C(%)', 'C/D(%)', 'D/E(%)', 'E/미도달(%)'];
             const headers = mode === 5 ? headers5 : headers4;
 
-            let html = `<div class="table-wrapper"><table><thead><tr><th>유형</th><th>난이도</th><th>문항수</th><th>배점합</th>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+            let html = `<table><thead><tr><th>유형</th><th>난이도</th><th>문항수</th><th>배점합</th>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
             cats.forEach((cat, ci) => {
                 const vals = td.rounds[round][ci] || Array(5).fill(null);
                 html += `<tr><td>${cat.type}</td><td>${cat.difficulty}</td><td>${cat.count}</td><td>${cat.totalScore.toFixed(1)}</td>`;
@@ -1251,7 +1005,7 @@
                 }
                 html += '</tr>';
             });
-            html += '</tbody></table></div>';
+            html += '</tbody></table>';
             document.getElementById('inputTableContainer').innerHTML = html;
         }
 
@@ -1384,7 +1138,7 @@
             const roundIdx = parseInt(viewRound);
 
             let html = '<div class="info-box" style="background:#fef3c7;border-color:#fcd34d;color:#92400e;margin-bottom:15px;">⚠️ <strong>적색 표시</strong>: 동일 문항범주 내 교사간 정답률 차이가 20% 이상인 경우입니다.</div>';
-            html += `<h4>📋 교사별 입력정보 (${roundIdx + 1}라운드)</h4><div class="table-wrapper"><table><thead><tr><th>유형</th><th>난이도</th><th>교사</th>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+            html += `<h4>📋 교사별 입력정보 (${roundIdx + 1}라운드)</h4><table><thead><tr><th>유형</th><th>난이도</th><th>교사</th>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
 
             cats.forEach((cat, ci) => {
                 // 각 컬럼별 모든 교사의 값 수집
@@ -1421,7 +1175,7 @@
                     html += '</tr>';
                 });
             });
-            html += '</tbody></table></div>';
+            html += '</tbody></table>';
             document.getElementById('viewContainer').innerHTML = html;
         }
 
@@ -1434,7 +1188,7 @@
             const levels = mode === 5 ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'];
 
             let html = `<h4>📊 문항 범주별 상세 통계 (${roundIdx + 1}라운드)</h4>`;
-            html += '<div class="table-wrapper"><table><thead><tr><th rowspan="2">문항유형</th><th rowspan="2">난이도</th>';
+            html += '<div style="overflow-x:auto;"><table><thead><tr><th rowspan="2">문항유형</th><th rowspan="2">난이도</th>';
             levels.forEach(lv => {
                 html += `<th colspan="4" style="text-align:center;background:#e0f2fe;">${lv}</th>`;
             });
@@ -1514,7 +1268,7 @@
             });
 
             let html = `<h4>🏆 최종 예상 추정분할점수 (${roundIdx + 1}라운드)</h4>`;
-            html += '<div class="table-wrapper"><table><thead><tr><th>구분</th>';
+            html += '<table><thead><tr><th>구분</th>';
             headers.forEach(h => html += `<th>${h}</th>`);
             html += '</tr></thead><tbody>';
 
@@ -1550,7 +1304,7 @@
             });
             html += '</tr>';
 
-            html += '</tbody></table></div>';
+            html += '</tbody></table>';
             document.getElementById('viewContainer').innerHTML = html;
         }
 
@@ -1613,7 +1367,7 @@
                 return;
             }
 
-            let html = '<div class="table-wrapper">';
+            let html = '<div style="overflow-x:auto;">';
             html += '<table><thead><tr><th>라운드</th><th>참여교사</th><th>A/B</th><th>B/C</th><th>C/D</th><th>D/E</th><th>E/미도달</th><th>선택</th></tr></thead><tbody>';
 
             for (let r = 0; r < maxRounds; r++) {
@@ -1763,16 +1517,17 @@
             // 상위 컨테이너를 타겟팅하는 것이 좋음. HTML 구조상 "📝 수행평가 성취수준별 분할점수 입력" 섹션 박스 내부를 갱신해야함.
             // 편의상 section-title 다음 요소들을 갱신하기 위해 아래와 같이 접근.
 
-            // 상위 컨테이너를 타겟팅
-            const thead = document.getElementById('perfCutsThead');
-            let parentDiv = thead.parentNode.parentNode;
-            if (parentDiv.classList.contains('table-wrapper')) {
-                parentDiv = parentDiv.parentNode;
-            }
+            const container = document.querySelector('#tab-2 .section-box table').parentNode; // table의 부모 div 찾아야 함
+            // 위 방법이 불확실하므로, perfCutsThead가 있는 table을 찾아 교체하는 방식 사용.
+            const oldTable = document.getElementById('perfCutsThead').parentNode;
+            const parentDiv = oldTable.parentNode;
 
-            // HTML 문자열 구성
+            // 모드 선택 라디오 버튼이 들어갈 공간 확보를 위해 parentDiv의 첫번째 자식(title) 뒤에 div 삽입, 
+            // table은 그 뒤에.
+
+            // 더 간단하게: HTML 문자열을 완전히 새로 구성해서 parentDiv.innerHTML에 넣음 (title 포함)
             parentDiv.innerHTML = `
-                <div class="section-title"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>수행평가 성취수준별 분할점수 입력</div>
+                <div class="section-title">📝 수행평가 성취수준별 분할점수 입력</div>
                 <div style="margin-bottom:15px; display:flex; gap:20px; align-items:center;">
                     <label style="cursor:pointer; font-weight:bold;">
                         <input type="radio" name="perfInputMode" value="all" ${(!project.perfInputMode || project.perfInputMode === 'all') ? 'checked' : ''} onchange="changePerfMode('all')"> 전체영역
@@ -1781,8 +1536,7 @@
                         <input type="radio" name="perfInputMode" value="each" ${(project.perfInputMode === 'each') ? 'checked' : ''} onchange="changePerfMode('each')"> 영역별
                     </label>
                 </div>
-                <div class="table-wrapper">
-                    <table>
+                <table>
                     <thead id="perfCutsThead">
                         <tr><th>영역명</th><th>배점</th>${headerLabels.map(h => `<th>${h}</th>`).join('')}</tr>
                     </thead>
@@ -1809,8 +1563,7 @@
                     ).join('')
                 }
                     </tbody>
-                    </table>
-                </div>
+                </table>
             `;
 
             calcPerfResult();
@@ -1902,20 +1655,15 @@
                     }, 0);
                 }
 
-                // 표시용 라벨: A, B, C...
-                // 결과 카드에 반영비율 정보 삭제 (사용자 요청)
-                // 스타일: 둥근 모서리, 배경색 등은 CSS로 처리
-
-                html += `<div class="summary-card">
-                    <div style="font-weight:700;color:#1e3a8a;margin-bottom:8px;font-size:1.1rem;">${displayLevels[i]}</div>
-                    <div class="score-val" style="font-size:2rem;font-weight:700;color:#2563eb;">${total.toFixed(2)}</div>
-                </div>`;
+                // 표시용 라벨: 컷오프의 의미를 살리기 위해 A/B 등으로 재매핑하거나 A, B 그대로 사용.
+                // 사용자 요청은 "수행평가는 A/B... 아니라 A, B...로 제목을 만들고" 였으므로 A, B.. 사용
+                html += `<div class="summary-card"><div style="font-weight:bold;color:#1e40af;margin-bottom:8px;">${displayLevels[i]}</div><div class="score-val">${total.toFixed(2)}</div></div>`;
             });
             grid.innerHTML = html;
         }
 
         // === 최종결과 ===
-        function calculateFinal(renderResults = true) {
+        function calculateFinal() {
             const grid = document.getElementById('finalResultGrid');
             const breakdown = document.getElementById('detailBreakdown');
 
@@ -2017,19 +1765,15 @@
 
             const finals = paperTotals.map((p, i) => p + perfTotals[i]);
 
-            if (renderResults) {
-                grid.innerHTML = levels.map((lv, i) =>
-                    `<div class="summary-card"><div style="font-weight:bold;color:#1e40af;margin-bottom:10px;">${lv}</div><div class="score-val">${finals[i].toFixed(2)}</div><div style="font-size:0.85rem;color:#64748b;">정기시험 ${paperTotals[i].toFixed(1)} + 수행 ${perfTotals[i].toFixed(1)}</div></div>`
-                ).join('');
-            } else {
-                grid.innerHTML = ''; // 버튼 누르기 전에는 비워둠
-            }
+            grid.innerHTML = levels.map((lv, i) =>
+                `<div class="summary-card"><div style="font-weight:bold;color:#1e40af;margin-bottom:10px;">${lv}</div><div class="score-val">${finals[i].toFixed(2)}</div><div style="font-size:0.85rem;color:#64748b;">정기시험 ${paperTotals[i].toFixed(1)} + 수행 ${perfTotals[i].toFixed(1)}</div></div>`
+            ).join('');
 
             // === 상세 산출 내역 테이블 생성 (2단 헤더) ===
 
             // 헤더 생성
             // const levels는 상단에서 이미 선언됨
-            let bhtml = `<div class="table-wrapper"><table>
+            let bhtml = `<table>
                 <thead>
                     <tr>
                         <th rowspan="2" style="vertical-align:middle;">정기시험/수행<br>구분</th>
@@ -2184,7 +1928,7 @@
                 });
             }
 
-            bhtml += `</tbody></table></div>
+            bhtml += `</tbody></table>
             
             <!-- 최종 결과 행 (기존 삭제 후 부활? 아니면 상세내역에는 최종결과 안 넣음?) -->
             <!-- 상세 내역 테이블 아래에 최종 결과 행을 넣는지 여부는 요청에 없으나, 
@@ -2238,7 +1982,7 @@
 
 
 
-        function exportFinalReport() { calculateFinal(true); saveFullProject(); }
+        function exportFinalReport() { calculateFinal(); saveFullProject(); }
 
         // 초기화
         window.onload = function () { switchTab(0); };
