@@ -230,6 +230,18 @@
             font-family: inherit;
         }
 
+        /* Hide number input spinners */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+            text-align: center;
+        }
+
         input[type="text"],
         input[type="number"],
         select {
@@ -367,6 +379,13 @@
 
         tr:last-child td {
             border-bottom: none;
+        }
+
+        /* Compact inputs for tables */
+        .inp-rate,
+        table input[type="number"] {
+            padding: 6px 4px;
+            min-width: 60px;
         }
 
         /* Responsive Grids */
@@ -568,6 +587,37 @@
             transform: translateY(-1px);
         }
 
+        /* Action Buttons Container */
+        .action-buttons-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .action-buttons-right {
+            display: flex;
+            gap: 5px;
+        }
+
+        @media screen and (max-width: 768px) {
+            .action-buttons-container {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .action-buttons-right {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .action-buttons-right button,
+            .action-buttons-container button {
+                width: 100%;
+            }
+        }
+
         .summary-card {
             text-align: center;
             justify-content: center;
@@ -662,11 +712,62 @@
             font-weight: bold;
         }
 
+        .invalid-input {
+            background: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            color: #dc2626 !important;
+        }
+
+        .warning-diff {
+            background: #fef3c7 !important;
+            border-color: #f59e0b !important;
+        }
+
+        .diff-alert {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
         .deploy-link {
             text-decoration: none;
             color: var(--primary);
             font-size: 0.9rem;
             font-weight: 500;
+        }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(30, 41, 59, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
         }
     </style>
 </head>
@@ -821,8 +922,8 @@
             <div class="final-actions-wrap">
                 <button class="btn btn-primary final-calc-btn" onclick="calculateFinal(true)">📊 추정분할점수 산출</button>
                 <div class="final-sub-actions">
-                    <button class="btn btn-warning" onclick="alert('나이스에서 결재를 상신합니다.')">승인 요청</button>
-                    <button class="btn btn-danger" onclick="alert('마감합니다.')">마감</button>
+                    <button class="btn btn-warning" onclick="showToast('나이스에서 결재를 상신합니다.')">승인 요청</button>
+                    <button class="btn btn-danger" onclick="showToast('마감합니다.')">마감</button>
                 </div>
             </div>
 
@@ -890,6 +991,20 @@
         </div>
     </div>
 
+    <!-- 확인 모달 (Generic Confirm Modal) -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content" style="max-width:400px;">
+            <div style="margin-bottom:20px;">
+                <h2 style="margin:0;margin-bottom:10px;">확인</h2>
+                <div id="confirmMessage" style="color:#334155;line-height:1.6;"></div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button id="confirmCancelBtn" class="btn btn-dark">취소</button>
+                <button id="confirmOkBtn" class="btn btn-primary">확인</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // === 전역 데이터 ===
         let project = {
@@ -919,8 +1034,8 @@
         // === 교사 관리 ===
         function addTeacher() {
             const name = document.getElementById('newTeacherName').value.trim();
-            if (!name) { alert('교사명을 입력하세요.'); return; }
-            if (project.teachers.includes(name)) { alert('이미 등록된 교사입니다.'); return; }
+            if (!name) { showToast('교사명을 입력하세요.'); return; }
+            if (project.teachers.includes(name)) { showToast('이미 등록된 교사입니다.'); return; }
             project.teachers.push(name);
             document.getElementById('newTeacherName').value = '';
             renderTeacherList();
@@ -928,10 +1043,11 @@
             project.papers.forEach(p => { if (!p.teacherData[name]) p.teacherData[name] = { rounds: [[]], completedRounds: [] }; });
         }
         function removeTeacher(name) {
-            if (!confirm(`'${name}' 교사를 삭제하시겠습니까?`)) return;
-            project.teachers = project.teachers.filter(t => t !== name);
-            project.papers.forEach(p => delete p.teacherData[name]);
-            renderTeacherList();
+            showConfirm(`'${name}' 교사를 삭제하시겠습니까?`, () => {
+                project.teachers = project.teachers.filter(t => t !== name);
+                project.papers.forEach(p => delete p.teacherData[name]);
+                renderTeacherList();
+            });
         }
         function renderTeacherList() {
             document.getElementById('teacherCount').textContent = project.teachers.length + '명';
@@ -943,8 +1059,8 @@
         // === 평가구조 설정 ===
         function addPaper() { project.papers.push({ name: `${project.papers.length + 1}회 정기시험`, score: 100, ratio: 0, excelData: [], categories: [], teacherData: {}, currentRound: 0, scoreMode: 5 }); renderSetup(); }
         function addPerf() { project.perfs.push({ name: `수행평가${project.perfs.length + 1}`, score: 100, ratio: 0, cuts: [null, null, null, null, null] }); renderSetup(); }
-        function removePaper(i) { if (project.papers.length <= 1) return alert('최소 1개 필요'); project.papers.splice(i, 1); renderSetup(); }
-        function removePerf(i) { if (project.perfs.length <= 1) return alert('최소 1개 필요'); project.perfs.splice(i, 1); renderSetup(); }
+        function removePaper(i) { if (project.papers.length <= 1) return showToast('최소 1개 필요'); project.papers.splice(i, 1); renderSetup(); }
+        function removePerf(i) { if (project.perfs.length <= 1) return showToast('최소 1개 필요'); project.perfs.splice(i, 1); renderSetup(); }
 
         function renderSetup() {
             renderTeacherList();
@@ -1045,11 +1161,16 @@
             </div>
             <div id="roundTabsContainer"></div>
             <div id="inputTableContainer"></div>
-            <div id="inputButtons" style="display:none;text-align:right;margin-top:15px;">
-                <button class="btn btn-primary" onclick="exportTeacherInputToExcel()" style="float:left;">📥 입력값 엑셀 다운로드</button>
-                <button class="btn btn-dark" onclick="saveTeacherData()">💾 임시 저장</button>
-                <button class="btn btn-success" onclick="finalizeRound()">✅ 입력마감</button>
-                <button class="btn btn-danger" onclick="openCancelModal()">🔓 입력마감 취소</button>
+            <div id="inputButtons" class="action-buttons-container" style="display:none;">
+                <div>
+                    <button class="btn btn-primary" onclick="exportTeacherInputToExcel()">📥 입력값 엑셀 다운로드</button>
+                </div>
+                <div class="action-buttons-right">
+                    <button class="btn btn-dark" onclick="saveTeacherData()">💾 저장</button>
+                    <button class="btn btn-danger" onclick="deleteRoundInputs()">🗑 삭제</button>
+                    <button class="btn btn-success" onclick="finalizeRound()">✅ 입력마감</button>
+                    <button class="btn btn-danger" onclick="openCancelModal()">🔓 입력마감 취소</button>
+                </div>
             </div></div>`;
                 html += `<div class="section-box"><div class="section-title">📋 조회</div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:15px;">
@@ -1099,7 +1220,7 @@
                         break;
                     }
                 }
-                if (headerRow < 0) { alert('양식 인식 실패'); return; }
+                if (headerRow < 0) { showToast('양식 인식 실패'); return; }
 
                 let hardIdx = -1, midIdx = -1, easyIdx = -1;
                 for (let r = headerRow; r <= headerRow + 1; r++) {
@@ -1111,7 +1232,7 @@
                         else if (v === '쉬움') easyIdx = idx;
                     });
                 }
-                if (hardIdx < 0) { alert('난이도 열 찾기 실패'); return; }
+                if (hardIdx < 0) { showToast('난이도 열 찾기 실패'); return; }
 
                 const excelData = [];
                 let currentType = '';
@@ -1129,7 +1250,7 @@
                     else continue;
                     excelData.push({ type: currentType || '선택형', difficulty: diff, score: parseFloat(sc) });
                 }
-                if (excelData.length === 0) { alert('문항 인식 실패'); return; }
+                if (excelData.length === 0) { showToast('문항 인식 실패'); return; }
 
                 project.papers[paperIdx].excelData = excelData;
                 project.papers[paperIdx].fileName = file.name;
@@ -1164,7 +1285,7 @@
             const name = document.getElementById('currentTeacher').value;
             if (!name) { document.getElementById('roundTabsContainer').innerHTML = ''; document.getElementById('inputTableContainer').innerHTML = ''; document.getElementById('inputButtons').style.display = 'none'; return; }
             document.getElementById('currentTeacherLabel').textContent = `- ${name} 선생님`;
-            document.getElementById('inputButtons').style.display = 'block';
+            document.getElementById('inputButtons').style.display = '';
             renderRoundTabs();
             renderInputTable();
         }
@@ -1183,9 +1304,9 @@
                     ${done ? '<i class="fa-solid fa-check-circle"></i>' : ''} ${i + 1}라운드
                 </button>`;
             }
-            html += `<button class="sub-tab sub-tab-add" onclick="addRound()"><i class="fa-solid fa-plus"></i> 추가</button>`;
+            html += `<button class="sub-tab sub-tab-add" onclick="addRound()"><i class="fa-solid fa-plus"></i> 라운드 등록</button>`;
             if (td.rounds.length > 1) {
-                html += `<button class="sub-tab" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;margin-left:auto;" onclick="deleteRound()"><i class="fa-solid fa-trash"></i> 삭제</button>`;
+                html += `<button class="sub-tab" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;margin-left:auto;" onclick="deleteRound()"><i class="fa-solid fa-trash"></i> 라운드 삭제</button>`;
             }
             document.getElementById('roundTabsContainer').innerHTML = `<div class="sub-tabs">${html}</div>`;
         }
@@ -1193,13 +1314,21 @@
         function switchRound(idx) { project.papers[currentPaperIdx].currentRound = idx; renderRoundTabs(); renderInputTable(); }
         function addRound() {
             const name = document.getElementById('currentTeacher').value;
-            if (!name) { alert('교사를 먼저 선택해주세요.'); return; }
+            if (!name) { showToast('교사를 먼저 선택해주세요.'); return; }
             const paper = project.papers[currentPaperIdx];
             const td = paper.teacherData[name];
 
             // 모든 교사에게 새 라운드 추가 (현재 교사만 추가하면 동기화 문제 발생)
-            const useCopy = confirm('이전 라운드 데이터를 복사하여 시작하시겠습니까?\n[확인]: 복사함 / [취소]: 빈 값으로 시작');
+            showConfirm('이전 라운드 데이터를 복사하여 시작하시겠습니까?\n[복사함]: 이전 값 유지\n[빈 값]: 초기화 상태로 시작', () => {
+                // Yes (Copy)
+                _addRoundProcess(true, paper, td);
+            }, () => {
+                // No (Empty)
+                _addRoundProcess(false, paper, td);
+            }, '복사함', '빈 값');
+        }
 
+        function _addRoundProcess(useCopy, paper, td) {
             project.teachers.forEach(t => {
                 const teacherData = paper.teacherData[t];
                 if (!teacherData) return;
@@ -1228,35 +1357,35 @@
             const td = paper.teacherData[name];
 
             if (td.rounds.length <= 1) {
-                alert('최소 1개의 라운드가 필요합니다.');
+                showToast('최소 1개의 라운드가 필요합니다.');
                 return;
             }
 
             const roundToDelete = paper.currentRound;
-            if (!confirm(`${roundToDelete + 1}라운드를 삭제하시겠습니까?\n해당 라운드의 모든 데이터가 삭제됩니다.`)) return;
+            showConfirm(`${roundToDelete + 1}라운드를 삭제하시겠습니까?\n해당 라운드의 모든 데이터가 삭제됩니다.`, () => {
+                // 모든 교사의 해당 라운드 삭제
+                project.teachers.forEach(t => {
+                    const teacherData = paper.teacherData[t];
+                    if (!teacherData) return;
+                    if (teacherData.rounds.length > roundToDelete) {
+                        teacherData.rounds.splice(roundToDelete, 1);
+                    }
+                    // completedRounds 업데이트
+                    const compIdx = teacherData.completedRounds.indexOf(roundToDelete);
+                    if (compIdx > -1) teacherData.completedRounds.splice(compIdx, 1);
+                    // 인덱스 조정
+                    teacherData.completedRounds = teacherData.completedRounds.map(r => r > roundToDelete ? r - 1 : r);
+                });
 
-            // 모든 교사의 해당 라운드 삭제
-            project.teachers.forEach(t => {
-                const teacherData = paper.teacherData[t];
-                if (!teacherData) return;
-                if (teacherData.rounds.length > roundToDelete) {
-                    teacherData.rounds.splice(roundToDelete, 1);
+                // 현재 라운드 조정
+                if (paper.currentRound >= td.rounds.length) {
+                    paper.currentRound = Math.max(0, td.rounds.length - 1);
                 }
-                // completedRounds 업데이트
-                const compIdx = teacherData.completedRounds.indexOf(roundToDelete);
-                if (compIdx > -1) teacherData.completedRounds.splice(compIdx, 1);
-                // 인덱스 조정
-                teacherData.completedRounds = teacherData.completedRounds.map(r => r > roundToDelete ? r - 1 : r);
+
+                showToast('라운드가 삭제되었습니다.');
+                renderRoundTabs(); renderInputTable();
+                renderViewRoundSelect();
             });
-
-            // 현재 라운드 조정
-            if (paper.currentRound >= td.rounds.length) {
-                paper.currentRound = Math.max(0, td.rounds.length - 1);
-            }
-
-            alert('라운드가 삭제되었습니다.');
-            renderRoundTabs(); renderInputTable();
-            renderViewRoundSelect();
         }
 
         function renderInputTable() {
@@ -1287,7 +1416,7 @@
                     const dis = isCompleted ? 'disabled' : '';
                     // 마지막 컬럼(5단계의 E/미도달)만 1% 단위 입력, 나머지는 5% 단위 select
                     if (mode === 5 && i === 4) {
-                        html += `<td><input type="number" class="inp-rate" data-cat="${ci}" data-idx="${i}" value="${v}" min="20" max="100" step="1" style="width:60px" oninput="validateInputs()" ${dis}></td>`;
+                        html += `<td><input type="number" class="inp-rate" data-cat="${ci}" data-idx="${i}" value="${v}" min="20" max="100" step="1" style="width:100%;min-width:80px;" oninput="validateInputs()" ${dis}></td>`;
                     } else {
                         html += `<td><select class="inp-rate" data-cat="${ci}" data-idx="${i}" onchange="validateInputs()" ${dis}><option value="">선택</option>`;
                         for (let o = 0; o <= 100; o += 5) html += `<option value="${o}" ${v === o ? 'selected' : ''}>${o}</option>`;
@@ -1370,7 +1499,7 @@
         }
 
         function saveTeacherData() {
-            if (!validateInputs()) { alert('입력값 오류를 확인하세요.'); return; }
+            if (!validateInputs()) { showToast('입력값 오류를 확인하세요.'); return; }
             const name = document.getElementById('currentTeacher').value;
             const paper = project.papers[currentPaperIdx];
             const td = paper.teacherData[name];
@@ -1383,37 +1512,49 @@
                 td.rounds[round][ci][vi] = v === '' ? null : parseFloat(v);
                 if (v === '') complete = false;
             });
-            if (!complete) { alert('모든 항목을 입력하세요.'); return; }
-            alert('저장되었습니다.');
+            if (!complete) { showToast('모든 항목을 입력하세요.'); return; }
+            showToast('저장되었습니다.');
         }
 
         function finalizeRound() {
-            if (!validateInputs()) { alert('입력값 오류를 확인하세요.'); return; }
+            if (!validateInputs()) { showToast('입력값 오류를 확인하세요.'); return; }
             const name = document.getElementById('currentTeacher').value;
             const paper = project.papers[currentPaperIdx];
             const td = paper.teacherData[name];
             const round = paper.currentRound;
-            if (td.completedRounds.includes(round)) { alert('이미 마감됨'); return; }
+            if (td.completedRounds.includes(round)) { showToast('이미 마감됨'); return; }
+
+            // 저장 로직 (중복 호출 방지 위해 직접 구현하거나 saveTeacherData 호출하되 toast 중복 주의)
+            // saveTeacherData(); -> 이것은 toast를 띄움. 
+            // 여기서는 조용히 저장하고 Confirm 띄우는게 나을 수 있음.
+            // 하지만 saveTeacherData를 직접 고치긴 번거로우니 그냥 둠.
+            // 단, saveTeacherData의 toast를 막을 방법이 없으므로...
+            // "저장되었습니다"가 뜨고 바로 "마감하시겠습니까?"가 뜨는 구조.
+            // 나쁘지 않음.
+
             saveTeacherData();
-            if (!confirm(`${name} 선생님의 ${round + 1}라운드를 마감하시겠습니까?`)) return;
-            td.completedRounds.push(round);
-            alert('마감 완료');
-            renderRoundTabs(); renderInputTable();
-            renderViewRoundSelect();
+
+            showConfirm(`${name} 선생님의 ${round + 1}라운드를 마감하시겠습니까?`, () => {
+                td.completedRounds.push(round);
+                showToast('마감 완료');
+                renderRoundTabs(); renderInputTable();
+                renderViewRoundSelect();
+            });
         }
 
         function openCancelModal() { document.getElementById('cancelModal').style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
         function confirmCancelFinalize() {
             const reason = document.querySelector('input[name="cancelReason"]:checked');
-            if (!reason) { alert('사유 선택 필요'); return; }
+            if (!reason) { showToast('사유 선택 필요'); return; }
             const name = document.getElementById('currentTeacher').value;
             const paper = project.papers[currentPaperIdx];
             const td = paper.teacherData[name];
             const round = paper.currentRound;
             const idx = td.completedRounds.indexOf(round);
             if (idx > -1) td.completedRounds.splice(idx, 1);
-            alert('마감 취소됨');
+            showToast('마감 취소됨');
             closeModal('cancelModal');
             renderRoundTabs(); renderInputTable();
             renderViewRoundSelect();
@@ -1654,7 +1795,7 @@
             const maxRounds = Math.max(...project.teachers.map(t => paper.teacherData[t]?.rounds?.length || 0));
 
             if (maxRounds === 0) {
-                alert('입력된 라운드 데이터가 없습니다.');
+                showToast('입력된 라운드 데이터가 없습니다.');
                 return;
             }
 
@@ -1712,7 +1853,7 @@
         function openApprovalFromResult() {
             const paper = project.papers[currentPaperIdx];
             if (paper.selectedResultRound === undefined) {
-                alert('먼저 승인요청할 라운드를 선택해주세요.');
+                showToast('먼저 승인요청할 라운드를 선택해주세요.');
                 return;
             }
             closeModal('resultModal');
@@ -1838,7 +1979,7 @@
                                 <td>${project.perfs.reduce((s, p) => s + p.score, 0)}</td>
                                 ${indices.map(j => {
                         const val = (project.perfTotalCuts && project.perfTotalCuts[j] !== undefined) ? project.perfTotalCuts[j] : null;
-                        return `<td><input type="number" value="${val === null ? '' : val}" style="width:80px" onchange="updatePerfTotalCut(${j}, this.value)"></td>`;
+                        return `<td><input type="number" value="${val === null ? '' : val}" style="width:100%;min-width:80px;" onchange="updatePerfTotalCut(${j}, this.value)"></td>`;
                     }).join('')}
                             </tr>`
                     :
@@ -1848,7 +1989,7 @@
                                     <td>${p.score}</td>
                                     ${indices.map(j => {
                             const val = p.cuts[j];
-                            return `<td><input type="number" value="${val === null ? '' : val}" style="width:60px" onchange="updatePerfCut(${i}, ${j}, this.value)"></td>`;
+                            return `<td><input type="number" value="${val === null ? '' : val}" style="width:100%;min-width:80px;" onchange="updatePerfCut(${i}, ${j}, this.value)"></td>`;
                         }).join('')}
                                 </tr>`
                     ).join('')
@@ -2275,13 +2416,66 @@
                     document.getElementById('subject').value = project.info?.subject || '';
                     if (project.accessGranted) switchTab(1);
                     else switchTab(0);
-                    alert('✅ 불러오기 완료');
-                } catch (err) { alert('파일 오류'); }
+                    showToast('✅ 불러오기 완료');
+                } catch (err) { showToast('파일 오류'); }
             };
             reader.readAsText(file);
         }
 
 
+
+        function showToast(message) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = message;
+            container.appendChild(toast);
+
+            // Trigger reflow
+            void toast.offsetWidth;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        function showConfirm(message, onConfirm, onCancel = null, confirmText = '확인', cancelText = '취소') {
+            const modal = document.getElementById('confirmModal');
+            const msgEl = document.getElementById('confirmMessage');
+            const newOkBtn = document.getElementById('confirmOkBtn').cloneNode(true);
+            const newCancelBtn = document.getElementById('confirmCancelBtn').cloneNode(true);
+
+            // Replace buttons to clear previous event listeners
+            document.getElementById('confirmOkBtn').parentNode.replaceChild(newOkBtn, document.getElementById('confirmOkBtn'));
+            document.getElementById('confirmCancelBtn').parentNode.replaceChild(newCancelBtn, document.getElementById('confirmCancelBtn'));
+
+            msgEl.innerHTML = message.replace(/\n/g, '<br>');
+            newOkBtn.textContent = confirmText;
+            newCancelBtn.textContent = cancelText;
+
+            newOkBtn.onclick = function () {
+                modal.style.display = 'none';
+                if (onConfirm) onConfirm();
+            };
+
+            newCancelBtn.onclick = function () {
+                modal.style.display = 'none';
+                if (onCancel) onCancel();
+            };
+
+            modal.style.display = 'flex';
+        }
 
         function exportFinalReport() { calculateFinal(true); saveFullProject(); }
 
