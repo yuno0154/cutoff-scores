@@ -2205,7 +2205,11 @@
 
             if (renderResults) {
                 grid.innerHTML = levels.map((lv, i) =>
-                    `<div class="summary-card"><div style="font-weight:bold;color:#1e40af;margin-bottom:10px;">${lv}</div><div class="score-val">${finals[i].toFixed(2)}</div><div style="font-size:0.85rem;color:#64748b;">정기시험 ${paperTotals[i].toFixed(1)} + 수행 ${perfTotals[i].toFixed(1)}</div></div>`
+                    `<div class="summary-card">
+                        <div style="font-weight:700;color:#1e3a8a;margin-bottom:8px;font-size:1.1rem;">${lv}</div>
+                        <div class="score-val" style="font-size:2rem;font-weight:700;color:#2563eb;">${finals[i].toFixed(2)}</div>
+                        <div style="font-size:0.75rem;color:#64748b;margin-top:4px;">정기시험 ${paperTotals[i].toFixed(1)} + 수행 ${perfTotals[i].toFixed(1)}</div>
+                    </div>`
                 ).join('');
             } else {
                 grid.innerHTML = ''; // 버튼 누르기 전에는 비워둠
