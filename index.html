@@ -2102,6 +2102,7 @@
 
         // === 최종결과 ===
         function calculateFinal(renderResults = true) {
+            normalizePaperNames();
             const grid = document.getElementById('finalResultGrid');
             const breakdown = document.getElementById('detailBreakdown');
 
@@ -2408,6 +2409,14 @@
             a.click();
         }
 
+        function normalizePaperNames() {
+            if (!Array.isArray(project?.papers)) return;
+            project.papers.forEach(paper => {
+                if (typeof paper?.name !== 'string') return;
+                paper.name = paper.name.replace(/^(\d+회)\s*지필평가$/, '$1 정기시험');
+            });
+        }
+
         function loadFullProject(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -2415,6 +2424,7 @@
             reader.onload = function (ev) {
                 try {
                     project = JSON.parse(ev.target.result);
+                    normalizePaperNames();
                     document.getElementById('year').value = project.info?.year || '2026';
                     document.getElementById('semester').value = project.info?.semester || '1학기';
                     document.getElementById('subject').value = project.info?.subject || '';
