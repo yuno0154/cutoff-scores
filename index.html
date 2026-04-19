@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -239,6 +239,7 @@
 
         input[type=number] {
             -moz-appearance: textfield;
+            appearance: textfield;
             text-align: center;
         }
 
@@ -1741,6 +1742,19 @@
         }
 
         // === 라운드별 조회 기능 ===
+        function renderViewRoundSelect() {
+            const select = document.getElementById('viewRoundSelect');
+            if (!select) return;
+            const paper = project.papers[currentPaperIdx];
+            const maxRounds = Math.max(...project.teachers.map(t => paper.teacherData[t]?.rounds?.length || 0));
+            const currentVal = parseInt(select.value) || 0;
+            let opts = '';
+            for (let r = 0; r < maxRounds; r++) {
+                opts += `<option value="${r}" ${r === currentVal ? 'selected' : ''}>${r + 1}라운드</option>`;
+            }
+            select.innerHTML = opts || '<option value="0">1라운드</option>';
+        }
+
         function refreshViewByRound() {
             const select = document.getElementById('viewRoundSelect');
             if (!select) return;
